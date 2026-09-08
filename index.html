@@ -38,18 +38,32 @@
 </head>
 <body class="bg-[#EAECF0] text-[#000000] font-sans antialiased selection:bg-[#FE7F2D] selection:text-[#000000]">
 
-    <!-- Navbar / Logo Area -->
-    <nav class="bg-[#000000] py-6 border-b-[3px] border-[#FE7F2D]">
-        <div class="max-w-5xl mx-auto px-6 flex justify-between items-center">
-            <!-- Custom Vector AR Monogram -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="320 105 465 450" class="w-16 h-auto sm:w-20" aria-label="AR Monogram Logo">
-                <path d="M543.5 109.59C553.93 112.52 551.08 121.69 551.09 130.5C551.11 150.83 551.12 171.17 551.14 191.5C551.22 278.83 551.93 366.17 552.01 453.5C552.03 477.5 552.06 501.5 552.08 525.5C552.09 529.95 553.47 543.48 551.29 546.77C550.34 548.21 549.01 548.3 547.5 548.63C542.53 546.04 543.94 540.38 543.94 535.5C480.79 507.34 417.65 479.18 354.5 451.01C348.32 457.54 342.36 470.98 337.62 479.13C335.28 483.15 333.45 488.08 329.5 490.72C327.99 489.98 326.47 489.24 324.96 488.5C324.73 481.44 332.82 471.28 336.42 464.94C347.29 445.81 358.3 426.9 369.36 407.84C410.51 336.93 450.6 265.37 492.35 194.82C504.39 174.46 516.19 153.9 527.86 133.34C531.24 127.37 537.8 112.32 543.5 109.59ZM573.5 109.56C578.87 111.86 581.22 119.61 583.88 124.61C590.71 137.43 597.63 150.19 604.53 162.97C621.62 194.59 638.62 226.25 655.56 257.95C666.62 278.65 679.38 299.33 688.95 320.5C652.61 347.17 616.27 373.83 579.93 400.5C597.42 408.7 615.61 415.51 633.35 423.15C666.04 437.23 698.88 451.04 731.71 464.8C744.37 470.11 757.05 475.38 769.66 480.82C773.82 482.62 780.66 483.81 781.5 488.87C780.57 490.08 779.64 491.29 778.72 492.5C774.1 492.87 768.51 489.15 764.2 487.36C752.21 482.4 740.27 477.28 728.32 472.21C693.18 457.29 658.05 442.3 622.8 427.63C612.72 423.43 602.63 419.22 592.62 414.85C587.34 412.55 581.18 408.91 575.5 408.4C574.28 442 575.42 475.87 575.42 509.5C575.42 518.17 575.42 526.83 575.42 535.5C575.42 539.54 576.16 543.68 573.5 546.93C565.9 547.61 567.08 542.34 567.08 536.5C567.08 525.83 567.08 515.17 567.08 504.5C567.08 456.83 567.08 409.17 567.08 361.5C567.08 297.83 567.08 234.17 567.08 170.5C567.08 155.83 567.08 141.17 567.08 126.5C567.08 119.56 565.79 112.34 573.5 109.56ZM543.39 124.74C481.69 230.99 420 337.25 358.3 443.5C420 470.97 481.69 498.44 543.39 525.9C543.39 392.18 543.39 258.46 543.39 124.74ZM575.42 127.44C575.42 215.82 575.42 304.21 575.42 392.59C609.83 367.89 644.23 343.2 678.63 318.5C644.23 254.81 609.83 191.13 575.42 127.44Z" fill="#FE7F2D" fill-rule="evenodd" stroke="#FE7F2D" stroke-width="0.25" stroke-linejoin="round"/>
-            </svg>
-            <span class="text-[#EAECF0] font-bold tracking-[0.2em] uppercase text-sm">Alessandro Romero</span>
+    <!-- Navbar with Center Navigation Links -->
+    <nav class="bg-[#000000] py-4 border-b-[3px] border-[#FE7F2D] sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-6 flex justify-between items-center gap-4">
+            
+            <!-- Custom Vector AR Monogram (Left) -->
+            <a href="#" aria-label="Home" class="flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="320 105 465 450" class="w-12 h-auto sm:w-14" aria-label="AR Monogram Logo">
+                    <path d="M543.5 109.59C553.93 112.52 551.08 121.69 551.09 130.5C551.11 150.83 551.12 171.17 551.14 191.5C551.22 278.83 551.93 366.17 552.01 453.5C552.03 477.5 552.06 501.5 552.08 525.5C552.09 529.95 553.47 543.48 551.29 546.77C550.34 548.21 549.01 548.3 547.5 548.63C542.53 546.04 543.94 540.38 543.94 535.5C480.79 507.34 417.65 479.18 354.5 451.01C348.32 457.54 342.36 470.98 337.62 479.13C335.28 483.15 333.45 488.08 329.5 490.72C327.99 489.98 326.47 489.24 324.96 488.5C324.73 481.44 332.82 471.28 336.42 464.94C347.29 445.81 358.3 426.9 369.36 407.84C410.51 336.93 450.6 265.37 492.35 194.82C504.39 174.46 516.19 153.9 527.86 133.34C531.24 127.37 537.8 112.32 543.5 109.59ZM573.5 109.56C578.87 111.86 581.22 119.61 583.88 124.61C590.71 137.43 597.63 150.19 604.53 162.97C621.62 194.59 638.62 226.25 655.56 257.95C666.62 278.65 679.38 299.33 688.95 320.5C652.61 347.17 616.27 373.83 579.93 400.5C597.42 408.7 615.61 415.51 633.35 423.15C666.04 437.23 698.88 451.04 731.71 464.8C744.37 470.11 757.05 475.38 769.66 480.82C773.82 482.62 780.66 483.81 781.5 488.87C780.57 490.08 779.64 491.29 778.72 492.5C774.1 492.87 768.51 489.15 764.2 487.36C752.21 482.4 740.27 477.28 728.32 472.21C693.18 457.29 658.05 442.3 622.8 427.63C612.72 423.43 602.63 419.22 592.62 414.85C587.34 412.55 581.18 408.91 575.5 408.4C574.28 442 575.42 475.87 575.42 509.5C575.42 518.17 575.42 526.83 575.42 535.5C575.42 539.54 576.16 543.68 573.5 546.93C565.9 547.61 567.08 542.34 567.08 536.5C567.08 525.83 567.08 515.17 567.08 504.5C567.08 456.83 567.08 409.17 567.08 361.5C567.08 297.83 567.08 234.17 567.08 170.5C567.08 155.83 567.08 141.17 567.08 126.5C567.08 119.56 565.79 112.34 573.5 109.56ZM543.39 124.74C481.69 230.99 420 337.25 358.3 443.5C420 470.97 481.69 498.44 543.39 525.9C543.39 392.18 543.39 258.46 543.39 124.74ZM575.42 127.44C575.42 215.82 575.42 304.21 575.42 392.59C609.83 367.89 644.23 343.2 678.63 318.5C644.23 254.81 609.83 191.13 575.42 127.44Z" fill="#FE7F2D" fill-rule="evenodd" stroke="#FE7F2D" stroke-width="0.25" stroke-linejoin="round"/>
+                </svg>
+            </a>
+
+            <!-- Quick Navigation Links (Center) -->
+            <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-[0.2em]">
+                <a href="#skills" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Skills</a>
+                <a href="#projects" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Projects</a>
+                <a href="#experience" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Experience</a>
+                <a href="#education" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Education</a>
+                <a href="#contact" class="text-[#FE7F2D] hover:text-[#EAECF0] transition-colors">Contact</a>
+            </div>
+
+            <!-- Full Name (Right) -->
+            <span class="text-[#EAECF0] font-bold tracking-[0.2em] uppercase text-xs sm:text-sm flex-shrink-0">Alessandro Romero</span>
         </div>
     </nav>
 
-    <!-- Hero Section (Text-Focused Layout) -->
+    <!-- Hero Section -->
     <header class="bg-[#000000] pt-16 pb-24 border-b-8 border-[#233D4D]">
         <div class="max-w-5xl mx-auto px-6">
             <div class="max-w-3xl">
@@ -85,8 +99,8 @@
         </div>
     </header>
 
-    <!-- Tech Stack & Skills -->
-    <section class="py-16 bg-[#233D4D] border-b-8 border-[#FE7F2D]">
+    <!-- Tech Stack & Skills Section -->
+    <section id="skills" class="py-16 bg-[#233D4D] border-b-8 border-[#FE7F2D]">
         <div class="max-w-5xl mx-auto px-6">
             <h3 class="text-2xl font-black text-[#EAECF0] uppercase tracking-widest mb-10">Technical Arsenal</h3>
             <div class="grid md:grid-cols-2 gap-8">
@@ -112,58 +126,138 @@
     </section>
 
     <!-- Featured Projects Showcase -->
-    <section class="py-20 max-w-5xl mx-auto px-6 border-b-8 border-[#000000]">
+    <section id="projects" class="py-20 max-w-5xl mx-auto px-6 border-b-8 border-[#000000]">
         <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12">Featured Projects</h3>
         
         <div class="grid md:grid-cols-2 gap-8">
-            <!-- Project 1 -->
-            <div class="bg-[#EAECF0] border-4 border-[#000000] p-8 flex flex-col justify-between hover:border-[#FE7F2D] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <!-- Project 1: OnValidation LPR System -->
+            <div class="bg-[#EAECF0] border-4 border-[#000000] p-8 flex flex-col justify-between hover:border-[#FCB841] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <div>
                     <div class="flex justify-between items-start mb-4">
-                        <h4 class="text-xl font-black text-[#000000] uppercase">Enterprise Database Optimizer</h4>
-                        <span class="text-xs font-bold px-3 py-1 bg-[#233D4D] text-[#EAECF0] sharp-edge uppercase">Backend</span>
+                        <div>
+                            <h4 class="text-xl font-black text-[#000000] uppercase">OnValidation LPR — Intelligent Parking System</h4>
+                            <p class="text-xs font-bold text-[#0B2E5A] uppercase tracking-wider mt-1">Intellipark / ParkingCorp &bull; Parking & Mobility Infrastructure</p>
+                        </div>
+                        <span class="text-xs font-bold px-3 py-1 bg-[#0B2E5A] text-[#FCB841] sharp-edge uppercase">Enterprise LPR</span>
                     </div>
-                    <p class="text-[#000000]/80 font-medium text-sm mb-6">
-                        Designed and structured high-throughput relational SQL database schemas to reduce query response times for client data processing pipelines.
+                    
+                    <p class="text-[#000000]/80 font-medium text-sm mb-4">
+                        Engineered backend sub-systems, administrative web dashboards, and hardware API integrations for an automated License Plate Recognition (LPR) platform deployed across commercial facilities in Central and South America.
                     </p>
+
+                    <ul class="space-y-2 text-xs font-medium text-[#000000] mb-6">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#0B2E5A] font-black">&rsaquo;</span>
+                            <span><strong>LPR & Camera APIs:</strong> Integrated Innova and Survision camera system APIs for automated vehicle detection, access control, and ticket validation workflows.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#0B2E5A] font-black">&rsaquo;</span>
+                            <span><strong>Administrative Frontend:</strong> Translated Figma UI design specifications into responsive web dashboards using Blazor.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#0B2E5A] font-black">&rsaquo;</span>
+                            <span><strong>Fintech & Payment APIs:</strong> Built instant debit payment integration APIs (Bancaribe) and standardized payment methods with Antares Mobility.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#0B2E5A] font-black">&rsaquo;</span>
+                            <span><strong>Data Architecture & Security:</strong> Executed SQL database operations and schema adjustments with PostgreSQL/DBeaver; implemented geofencing logic, authentication/authorization, and Swagger OpenAPI documentation using WiFiMan VPN.</span>
+                        </li>
+                    </ul>
+
                     <div class="flex flex-wrap gap-2 mb-8">
-                        <span class="px-3 py-1 bg-[#000000] text-[#FE7F2D] text-xs font-bold uppercase tracking-wider sharp-edge">SQL</span>
-                        <span class="px-3 py-1 bg-[#000000] text-[#FE7F2D] text-xs font-bold uppercase tracking-wider sharp-edge">Java</span>
-                        <span class="px-3 py-1 bg-[#000000] text-[#FE7F2D] text-xs font-bold uppercase tracking-wider sharp-edge">PostgreSQL</span>
+                        <span class="px-2.5 py-1 bg-[#0B2E5A] text-[#FCB841] text-xs font-bold uppercase tracking-wider sharp-edge">C# / .NET</span>
+                        <span class="px-2.5 py-1 bg-[#0B2E5A] text-[#FCB841] text-xs font-bold uppercase tracking-wider sharp-edge">Blazor</span>
+                        <span class="px-2.5 py-1 bg-[#0B2E5A] text-[#FCB841] text-xs font-bold uppercase tracking-wider sharp-edge">PostgreSQL</span>
+                        <span class="px-2.5 py-1 bg-[#0B2E5A] text-[#FCB841] text-xs font-bold uppercase tracking-wider sharp-edge">Swagger API</span>
+                        <span class="px-2.5 py-1 bg-[#0B2E5A] text-[#FCB841] text-xs font-bold uppercase tracking-wider sharp-edge">LPR Hardware APIs</span>
+                        <span class="px-2.5 py-1 bg-[#0B2E5A] text-[#FCB841] text-xs font-bold uppercase tracking-wider sharp-edge">WiFiMan</span>
                     </div>
                 </div>
-                <div class="flex gap-4 pt-4 border-t-2 border-[#000000]">
-                    <a href="https://github.com/Aromero-ux" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-widest text-[#000000] hover:text-[#FE7F2D] underline">GitHub Repo &rarr;</a>
-                    <a href="https://aromero.dev" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-widest text-[#000000] hover:text-[#FE7F2D] underline">Live Demo &rarr;</a>
+                
+                <div class="flex items-center justify-between pt-4 border-t-2 border-[#000000]">
+                    <!-- Standout Animated Link -->
+                    <a href="https://app.onvalidation.net" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#0B2E5A] hover:text-[#FCB841] transition-colors group">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FCB841] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0B2E5A]"></span>
+                        </span>
+                        <span class="underline underline-offset-4 decoration-[#FCB841] decoration-2">Launch Production App &rarr;</span>
+                    </a>
+
+                    <!-- Repository Status with Lock Icon -->
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#000000]/70 bg-[#EAECF0] px-2.5 py-1 border border-[#000000]/30 sharp-edge">
+                        <svg class="w-3 h-3 text-[#000000]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        Private Enterprise Repo
+                    </span>
                 </div>
             </div>
 
-            <!-- Project 2 -->
-            <div class="bg-[#EAECF0] border-4 border-[#000000] p-8 flex flex-col justify-between hover:border-[#FE7F2D] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <!-- Project 2: Shopy Supermarket Platform -->
+            <div class="bg-[#EAECF0] border-4 border-[#000000] p-8 flex flex-col justify-between hover:border-[#E72C3B] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <div>
                     <div class="flex justify-between items-start mb-4">
-                        <h4 class="text-xl font-black text-[#000000] uppercase">Full-Stack Application Architecture</h4>
-                        <span class="text-xs font-bold px-3 py-1 bg-[#FE7F2D] text-[#000000] sharp-edge uppercase">Full-Stack</span>
+                        <div>
+                            <h4 class="text-xl font-black text-[#000000] uppercase">Shopy — Supermarket Management Platform</h4>
+                            <p class="text-xs font-bold text-[#E72C3B] uppercase tracking-wider mt-1">Grupo Raphael &bull; Retail & Commercial Systems</p>
+                        </div>
+                        <span class="text-xs font-bold px-3 py-1 bg-[#E72C3B] text-[#EFDA01] sharp-edge uppercase">Production</span>
                     </div>
-                    <p class="text-[#000000]/80 font-medium text-sm mb-6">
-                        Architected responsive frontend interfaces backed by robust REST APIs to manage user authentication, session data, and database sync.
+                    
+                    <p class="text-[#000000]/80 font-medium text-sm mb-4">
+                        Developed administrative dashboards, client filtering logic, promotional tools, and database routines for a live retail supermarket system.
                     </p>
+
+                    <ul class="space-y-2 text-xs font-medium text-[#000000] mb-6">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#E72C3B] font-black">&rsaquo;</span>
+                            <span><strong>Dashboard & Filtering Systems:</strong> Built client search engines, dynamic category filtering, and complete CRUD operations (Add, View, Edit, Delete).</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#E72C3B] font-black">&rsaquo;</span>
+                            <span><strong>Promotions Engine:</strong> Authored backend rules and workflows to configure, apply, and calculate retail promotional discounts.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#E72C3B] font-black">&rsaquo;</span>
+                            <span><strong>Database & FTP Operations:</strong> Managed MySQL databases and deployed system updates via FileZilla over FortiClient VPN connections.</span>
+                        </li>
+                    </ul>
+
                     <div class="flex flex-wrap gap-2 mb-8">
-                        <span class="px-3 py-1 bg-[#000000] text-[#FE7F2D] text-xs font-bold uppercase tracking-wider sharp-edge">C#</span>
-                        <span class="px-3 py-1 bg-[#000000] text-[#FE7F2D] text-xs font-bold uppercase tracking-wider sharp-edge">.NET Core</span>
-                        <span class="px-3 py-1 bg-[#000000] text-[#FE7F2D] text-xs font-bold uppercase tracking-wider sharp-edge">REST API</span>
+                        <span class="px-2.5 py-1 bg-[#E72C3B] text-[#EFDA01] text-xs font-bold uppercase tracking-wider sharp-edge">PHP</span>
+                        <span class="px-2.5 py-1 bg-[#E72C3B] text-[#EFDA01] text-xs font-bold uppercase tracking-wider sharp-edge">MySQL</span>
+                        <span class="px-2.5 py-1 bg-[#E72C3B] text-[#EFDA01] text-xs font-bold uppercase tracking-wider sharp-edge">FileZilla</span>
+                        <span class="px-2.5 py-1 bg-[#E72C3B] text-[#EFDA01] text-xs font-bold uppercase tracking-wider sharp-edge">FortiClient VPN</span>
                     </div>
                 </div>
-                <div class="flex gap-4 pt-4 border-t-2 border-[#000000]">
-                    <a href="https://github.com/Aromero-ux" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-widest text-[#000000] hover:text-[#FE7F2D] underline">GitHub Repo &rarr;</a>
-                    <a href="https://aromero.dev" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-widest text-[#000000] hover:text-[#FE7F2D] underline">Live Demo &rarr;</a>
+                
+                <div class="flex items-center justify-between pt-4 border-t-2 border-[#000000]">
+                    <span class="text-xs font-bold uppercase tracking-widest text-[#000000]/50 italic">
+                        Internal Retail System
+                    </span>
+
+                    <!-- 
+                    COMMENTED OUT LIVE LINK: Uncomment below if you want to display the direct login link in the future
+                    <a href="https://shopi.gruporaphael.com/login" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-widest text-[#000000] hover:text-[#E72C3B] underline">
+                        Production Login &rarr;
+                    </a>
+                    -->
+
+                    <!-- Repository Status with Lock Icon -->
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#000000]/70 bg-[#EAECF0] px-2.5 py-1 border border-[#000000]/30 sharp-edge">
+                        <svg class="w-3 h-3 text-[#000000]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        Private Enterprise Repo
+                    </span>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Experience Section -->
-    <section class="py-20 max-w-5xl mx-auto px-6">
+    <section id="experience" class="py-20 max-w-5xl mx-auto px-6">
         <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12">Experience</h3>
         
         <div class="space-y-8">
@@ -214,7 +308,7 @@
     </section>
 
     <!-- Education & Leadership -->
-    <section class="py-20 bg-[#000000] text-[#EAECF0]">
+    <section id="education" class="py-20 bg-[#000000] text-[#EAECF0]">
         <div class="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-16">
             
             <div>
@@ -256,7 +350,7 @@
     </section>
 
     <!-- Contact Form & Footer -->
-    <footer class="bg-[#233D4D] py-24 border-t-8 border-[#FE7F2D]">
+    <footer id="contact" class="bg-[#233D4D] py-24 border-t-8 border-[#FE7F2D]">
         <div class="max-w-3xl mx-auto px-6 text-center">
             
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="320 105 465 450" class="w-32 h-auto mx-auto mb-12" aria-label="AR Monogram Logo Footer">
@@ -264,7 +358,7 @@
             </svg>
 
             <h2 class="text-4xl font-black text-[#EAECF0] tracking-[0.15em] uppercase mb-4">Get In Touch</h2>
-            <p class="text-[#EAECF0]/70 text-sm font-bold uppercase tracking-widest mb-10">Send a direct message or email </p>
+            <p class="text-[#EAECF0]/70 text-sm font-bold uppercase tracking-widest mb-10">Send a direct message or email</p>
 
             <form action="https://formspree.io/f/mvkovvzn" method="POST" class="text-left space-y-4 mb-16">
                 <div>
