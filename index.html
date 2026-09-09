@@ -17,28 +17,60 @@
     <meta property="og:url" content="https://aromero.dev">
     <meta property="og:title" content="Alessandro Romero | Software Engineer">
     <meta property="og:description" content="Software Engineer specializing in backend/frontend solutions, database management, and software architecture.">
+    <meta property="og:image" content="https://aromero.dev/og-preview.png">
 
     <!-- Twitter Preview Cards -->
-    <meta property="twitter:card" content="summary">
+    <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:title" content="Alessandro Romero | Software Engineer">
     <meta property="twitter:description" content="Software Engineer specializing in backend/frontend solutions and database management.">
+    <meta property="twitter:image" content="https://aromero.dev/og-preview.png">
     
+    <!-- Structured Data (JSON-LD) for Search Engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Alessandro Romero",
+      "url": "https://aromero.dev",
+      "jobTitle": "Software Engineer",
+      "alumniOf": "Trevecca Nazarene University",
+      "sameAs": [
+        "https://www.linkedin.com/in/alessandro-romero-738991295/",
+        "https://github.com/Aromero-ux"
+      ]
+    }
+    </script>
+
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         .sharp-edge { border-radius: 0 !important; }
+        
+        /* Prevent sticky navbar from overlapping section headers on click */
+        section[id], footer[id] {
+            scroll-margin-top: 80px;
+        }
+
+        /* Active navigation link highlight state */
+        .nav-link.active, .mobile-nav-link.active {
+            color: #FE7F2D !important;
+        }
     </style>
 
-    <!-- Vercel Web Analytics & Speed Insights (HTML Integration) -->
+    <!-- Vercel Web Analytics & Speed Insights -->
     <script defer src="/_vercel/insights/script.js"></script>
     <script defer src="/_vercel/speed-insights/script.js"></script>
 </head>
 <body class="bg-[#EAECF0] text-[#000000] font-sans antialiased selection:bg-[#FE7F2D] selection:text-[#000000]">
 
-    <!-- Navbar with Center Navigation Links -->
+    <!-- Navbar -->
     <nav class="bg-[#000000] py-4 border-b-[3px] border-[#FE7F2D] sticky top-0 z-50">
         <div class="max-w-5xl mx-auto px-6 flex justify-between items-center gap-4">
             
@@ -49,17 +81,37 @@
                 </svg>
             </a>
 
-            <!-- Quick Navigation Links (Center) -->
+            <!-- Quick Navigation Links (Center Desktop) -->
             <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-[0.2em]">
-                <a href="#skills" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Skills</a>
-                <a href="#projects" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Projects</a>
-                <a href="#experience" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Experience</a>
-                <a href="#education" class="text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Education</a>
-                <a href="#contact" class="text-[#FE7F2D] hover:text-[#EAECF0] transition-colors">Contact</a>
+                <a href="#skills" class="nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Skills</a>
+                <a href="#projects" class="nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Projects</a>
+                <a href="#experience" class="nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Experience</a>
+                <a href="#education" class="nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Education</a>
+                <a href="#contact" class="nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] transition-colors">Contact</a>
             </div>
 
-            <!-- Full Name (Right) -->
-            <span class="text-[#EAECF0] font-bold tracking-[0.2em] uppercase text-xs sm:text-sm flex-shrink-0">Alessandro Romero</span>
+            <!-- Mobile Hamburger + Full Name -->
+            <div class="flex items-center gap-4 sm:gap-6">
+                <span class="text-[#EAECF0] font-bold tracking-[0.2em] uppercase text-xs sm:text-sm flex-shrink-0">
+                    Alessandro Romero
+                </span>
+
+                <!-- Animated Hamburger Button (Positioned Right with Left Margin/Gap) -->
+                <button id="mobile-menu-btn" aria-label="Toggle Navigation Menu" class="md:hidden text-[#EAECF0] hover:text-[#FE7F2D] focus:outline-none w-7 h-7 flex flex-col justify-center items-center gap-[5px] cursor-pointer group">
+                    <span class="hamburger-line w-6 h-[2px] bg-current transition-all duration-300 ease-in-out origin-center"></span>
+                    <span class="hamburger-line w-6 h-[2px] bg-current transition-all duration-300 ease-in-out"></span>
+                    <span class="hamburger-line w-6 h-[2px] bg-current transition-all duration-300 ease-in-out origin-center"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Drawer Navigation -->
+        <div id="mobile-menu" class="hidden md:hidden bg-[#000000] border-t border-[#FE7F2D]/40 px-6 py-4 flex flex-col gap-4 text-xs font-bold uppercase tracking-[0.2em] mt-3">
+            <a href="#skills" class="mobile-nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] py-1 transition-colors">Skills</a>
+            <a href="#projects" class="mobile-nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] py-1 transition-colors">Projects</a>
+            <a href="#experience" class="mobile-nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] py-1 transition-colors">Experience</a>
+            <a href="#education" class="mobile-nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] py-1 transition-colors">Education</a>
+            <a href="#contact" class="mobile-nav-link text-[#EAECF0]/80 hover:text-[#FE7F2D] py-1 transition-colors">Contact</a>
         </div>
     </nav>
 
@@ -83,8 +135,16 @@
                 </div>
 
                 <div class="flex flex-wrap gap-4 items-center">
+                    <!-- Resume Download (Temporarily Disabled)
+                    <a href="assets/AR-Resume2026.pdf" download target="_blank" 
+                    class="inline-flex items-center gap-2 px-6 py-3 bg-[#FE7F2D] hover:bg-[#EAECF0] text-[#000000] font-bold text-sm uppercase tracking-widest transition-colors sharp-edge">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Resume (PDF)
+                    </a>
+                    -->
+
                     <a href="https://www.linkedin.com/in/alessandro-romero-738991295/" target="_blank" rel="noopener noreferrer" 
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-[#FE7F2D] hover:bg-[#EAECF0] text-[#000000] font-bold text-sm uppercase tracking-widest transition-colors sharp-edge">
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-[#233D4D] hover:bg-[#FE7F2D] text-[#EAECF0] hover:text-[#000000] border border-[#233D4D] hover:border-[#FE7F2D] font-bold text-sm uppercase tracking-widest transition-colors sharp-edge">
                         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
                         LinkedIn
                     </a>
@@ -175,7 +235,6 @@
                 </div>
                 
                 <div class="flex items-center justify-between pt-4 border-t-2 border-[#000000]">
-                    <!-- Standout Animated Link -->
                     <a href="https://app.onvalidation.net" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#0B2E5A] hover:text-[#FCB841] transition-colors group">
                         <span class="relative flex h-2.5 w-2.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FCB841] opacity-75"></span>
@@ -184,7 +243,6 @@
                         <span class="underline underline-offset-4 decoration-[#FCB841] decoration-2">Launch Production App &rarr;</span>
                     </a>
 
-                    <!-- Repository Status with Lock Icon -->
                     <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#000000]/70 bg-[#EAECF0] px-2.5 py-1 border border-[#000000]/30 sharp-edge">
                         <svg class="w-3 h-3 text-[#000000]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -237,14 +295,6 @@
                         Internal Retail System
                     </span>
 
-                    <!-- 
-                    COMMENTED OUT LIVE LINK: Uncomment below if you want to display the direct login link in the future
-                    <a href="https://shopi.gruporaphael.com/login" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-widest text-[#000000] hover:text-[#E72C3B] underline">
-                        Production Login &rarr;
-                    </a>
-                    -->
-
-                    <!-- Repository Status with Lock Icon -->
                     <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#000000]/70 bg-[#EAECF0] px-2.5 py-1 border border-[#000000]/30 sharp-edge">
                         <svg class="w-3 h-3 text-[#000000]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -360,7 +410,10 @@
             <h2 class="text-4xl font-black text-[#EAECF0] tracking-[0.15em] uppercase mb-4">Get In Touch</h2>
             <p class="text-[#EAECF0]/70 text-sm font-bold uppercase tracking-widest mb-10">Send a direct message or email</p>
 
-            <form action="https://formspree.io/f/mvkovvzn" method="POST" class="text-left space-y-4 mb-16">
+            <!-- Inline Form Status Feedback -->
+            <div id="form-status" class="hidden text-xs font-bold uppercase tracking-widest p-4 mb-6 sharp-edge"></div>
+
+            <form id="contact-form" action="https://formspree.io/f/mvkovvzn" method="POST" class="text-left space-y-4 mb-16">
                 <div>
                     <label for="name" class="block text-xs font-bold uppercase tracking-widest text-[#EAECF0] mb-2">Name</label>
                     <input type="text" name="name" id="name" required class="w-full p-4 bg-[#000000] text-[#EAECF0] border-2 border-[#FE7F2D] sharp-edge focus:outline-none focus:bg-[#000000]/80">
@@ -373,7 +426,7 @@
                     <label for="message" class="block text-xs font-bold uppercase tracking-widest text-[#EAECF0] mb-2">Message</label>
                     <textarea name="message" id="message" rows="4" required class="w-full p-4 bg-[#000000] text-[#EAECF0] border-2 border-[#FE7F2D] sharp-edge focus:outline-none focus:bg-[#000000]/80"></textarea>
                 </div>
-                <button type="submit" class="w-full py-5 bg-[#FE7F2D] hover:bg-[#EAECF0] text-[#000000] font-black uppercase tracking-widest transition-colors sharp-edge border-2 border-[#FE7F2D]">
+                <button type="submit" id="submit-btn" class="w-full py-5 bg-[#FE7F2D] hover:bg-[#EAECF0] text-[#000000] font-black uppercase tracking-widest transition-colors sharp-edge border-2 border-[#FE7F2D]">
                     Send Message
                 </button>
             </form>
@@ -382,5 +435,115 @@
         </div>
     </footer>
 
+    <!-- Interactive Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Mobile Menu Drawer & Hamburger Animation Logic
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+            const lines = menuBtn.querySelectorAll('.hamburger-line');
+
+            function toggleMenu() {
+                const isMenuHidden = mobileMenu.classList.toggle('hidden');
+                
+                // Hamburger to 'X' animation toggle
+                if (!isMenuHidden) {
+                    lines[0].classList.add('rotate-45', 'translate-y-[7px]');
+                    lines[1].classList.add('opacity-0');
+                    lines[2].classList.add('-rotate-45', '-translate-y-[7px]');
+                } else {
+                    lines[0].classList.remove('rotate-45', 'translate-y-[7px]');
+                    lines[1].classList.remove('opacity-0');
+                    lines[2].classList.remove('-rotate-45', '-translate-y-[7px]');
+                }
+            }
+
+            menuBtn.addEventListener('click', toggleMenu);
+
+            mobileNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        toggleMenu();
+                    }
+                });
+            });
+
+            // 2. Active Navigation Highlight & ARIA Observer Logic
+            const sections = document.querySelectorAll('section[id], footer[id]');
+            const allNavLinks = document.querySelectorAll('.nav-link, .mobile-nav-link');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '-20% 0px -60% 0px',
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        allNavLinks.forEach((link) => {
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                                link.setAttribute('aria-current', 'page');
+                            } else {
+                                link.classList.remove('active');
+                                link.removeAttribute('aria-current');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach((section) => observer.observe(section));
+
+            // 3. Formspree Seamless AJAX Submission
+            const contactForm = document.getElementById('contact-form');
+            const formStatus = document.getElementById('form-status');
+            const submitBtn = document.getElementById('submit-btn');
+
+            contactForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+
+                const formData = new FormData(contactForm);
+
+                try {
+                    const response = await fetch(contactForm.action, {
+                        method: contactForm.method,
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        formStatus.textContent = 'Message sent successfully! Thank you for reaching out.';
+                        formStatus.className = 'text-xs font-bold uppercase tracking-widest p-4 mb-6 sharp-edge bg-[#FE7F2D] text-[#000000] border-2 border-[#FE7F2D]';
+                        formStatus.classList.remove('hidden');
+                        contactForm.reset();
+                    } else {
+                        const data = await response.json();
+                        if (Object.hasOwn(data, 'errors')) {
+                            formStatus.textContent = data.errors.map(error => error.message).join(', ');
+                        } else {
+                            formStatus.textContent = 'Unable to send message. Please try again later.';
+                        }
+                        formStatus.className = 'text-xs font-bold uppercase tracking-widest p-4 mb-6 sharp-edge bg-red-600 text-[#EAECF0] border-2 border-red-600';
+                        formStatus.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    formStatus.textContent = 'Network error. Please check your connection and try again.';
+                    formStatus.className = 'text-xs font-bold uppercase tracking-widest p-4 mb-6 sharp-edge bg-red-600 text-[#EAECF0] border-2 border-red-600';
+                    formStatus.classList.remove('hidden');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
