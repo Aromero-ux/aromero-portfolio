@@ -1,0 +1,1 @@
+This extension does not collect, store, or transmit any personal user data. All audio files are processed locally on the user's device.
