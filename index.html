@@ -19,6 +19,9 @@
     <meta property="og:description" content="Software Engineer specializing in backend/frontend solutions, database management, and software architecture.">
     <meta property="og:image" content="https://aromero.dev/og-preview.png">
 
+    <meta property="og:site_name" content="Alessandro Romero">
+    <meta name="reply-to" content="alessandro3005g@gmail.com">
+
     <!-- Twitter Preview Cards -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:title" content="Alessandro Romero | Software Engineer">
@@ -29,14 +32,24 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Person",
-      "name": "Alessandro Romero",
-      "url": "https://aromero.dev",
-      "jobTitle": "Software Engineer",
-      "alumniOf": "Trevecca Nazarene University",
-      "sameAs": [
-        "https://www.linkedin.com/in/alessandro-romero-738991295/",
-        "https://github.com/Aromero-ux"
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "name": "Alessandro Romero",
+          "url": "https://aromero.dev"
+        },
+        {
+          "@type": "Person",
+          "name": "Alessandro Romero",
+          "url": "https://aromero.dev",
+          "jobTitle": "Software Engineer",
+          "email": "alessandro3005g@gmail.com",
+          "alumniOf": "Trevecca Nazarene University",
+          "sameAs": [
+            "https://www.linkedin.com/in/alessandro-romero-738991295/",
+            "https://github.com/Aromero-ux"
+          ]
+        }
       ]
     }
     </script>
@@ -170,10 +183,23 @@
                 <div>
                     <h4 class="text-sm font-bold uppercase tracking-widest text-[#FE7F2D] mb-4">Languages & Databases</h4>
                     <div class="flex flex-wrap gap-3">
-                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">SQL</span>
+                        <div class="relative group inline-block">
+                            <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors cursor-help block">SQL</span>
+                            <!-- Tooltip -->
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-2 bg-[#FE7F2D] text-[#000000] text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none sharp-edge border-2 border-[#000000] z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                Relational Database Management
+                            </div>
+                        </div>
                         <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">C++</span>
                         <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">Java</span>
                         <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">C#</span>
+                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">HTML</span>
+                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">CSS</span>
+                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">JavaScript</span>
+                        <!--<span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">Python</span> -->
+                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">PHP</span>
+                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">PostgreSQL</span>
+                        <span class="px-4 py-2 bg-[#000000] text-[#EAECF0] border border-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge hover:border-[#FE7F2D] transition-colors">AWS</span>
                     </div>
                 </div>
                 <div>
@@ -181,7 +207,16 @@
                     <div class="flex flex-wrap gap-3">
                         <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge">Data Analysis</span>
                         <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge">Project Management</span>
-                        <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge">Process Improvement</span>
+                        <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge">API Integration</span>
+                        <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge">Database Administration</span>
+                        <div class="relative group inline-block">
+                            <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge cursor-help block">Fullstack Development</span>
+                            <!-- Tooltip -->
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-2 bg-[#000000] text-[#EAECF0] text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none sharp-edge border-2 border-[#FE7F2D] z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                End-to-End System Architecture
+                            </div>
+                        </div>
+                        <span class="px-4 py-2 bg-[#EAECF0] text-[#000000] text-sm font-bold uppercase tracking-wider sharp-edge">Leadership</span>
                     </div>
                 </div>
             </div>
@@ -307,6 +342,12 @@
                 </div>
             </div>
         </div>
+        <div class="mt-14 text-center">
+            <a href="projects.html" class="inline-flex items-center gap-3 px-8 py-4 bg-[#000000] text-[#EAECF0] font-black text-sm uppercase tracking-widest border-4 border-[#000000] hover:bg-[#FE7F2D] hover:text-[#000000] transition-all duration-300 sharp-edge hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group">
+                View All Projects
+                <span class="group-hover:translate-x-2 transition-transform duration-300">&rarr;</span>
+            </a>
+        </div>
     </section>
 
     <!-- Experience Section -->
@@ -314,49 +355,46 @@
         <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12">Experience</h3>
         
         <div class="space-y-8">
+            <!-- 1. Set Ups Coordinator -->
             <div class="bg-[#EAECF0] border-4 border-[#000000] p-8 hover:border-[#FE7F2D] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
                     <div>
-                        <h4 class="text-xl font-black text-[#000000] uppercase">Software Engineer</h4>
-                        <p class="text-[#233D4D] font-bold mt-1 uppercase tracking-wider">Soluciones Medianet C.A.</p>
+                        <h4 class="text-xl font-black text-[#000000] uppercase">Set Ups Coordinator</h4>
+                        <p class="text-[#233D4D] font-bold mt-1 uppercase tracking-wider">Trevecca Nazarene University</p>
                     </div>
-                    <span class="text-sm font-bold px-4 py-1 bg-[#FE7F2D] text-[#000000] mt-3 md:mt-0 sharp-edge uppercase tracking-widest">2025 – Present</span>
+                    <span class="text-sm font-bold px-4 py-1 bg-[#FE7F2D] text-[#000000] mt-3 md:mt-0 sharp-edge uppercase tracking-widest">Sep 2026 – Present</span>
                 </div>
                 <ul class="space-y-3 text-[#000000] font-medium">
                     <li class="flex items-start gap-3">
                         <span class="text-[#FE7F2D] font-black text-lg leading-none">&rsaquo;</span>
-                        <span>Develop backend and frontend software solutions with a focus on database management.</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-[#FE7F2D] font-black text-lg leading-none">&rsaquo;</span>
-                        <span>Communicate directly with clients to gather requirements and deliver functional software architecture.</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-[#FE7F2D] font-black text-lg leading-none">&rsaquo;</span>
-                        <span>Collaborate within a 20+ person cross-functional engineering team under tight deadlines.</span>
+                        <span>Manage on-site logistics, team coordination, and event setups across campus facilities.</span>
                     </li>
                 </ul>
             </div>
 
+            <!-- 2. Software Engineer -->
             <div class="bg-[#EAECF0] border-4 border-[#000000] p-8 hover:border-[#FE7F2D] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
                     <div>
-                        <h4 class="text-xl font-black text-[#000000] uppercase">Peer Mentor</h4>
-                        <p class="text-[#233D4D] font-bold mt-1 uppercase tracking-wider">Trevecca Nazarene University</p>
+                        <h4 class="text-xl font-black text-[#000000] uppercase">Software Engineer (Freelance)</h4>
+                        <p class="text-[#233D4D] font-bold mt-1 uppercase tracking-wider">Soluciones Medianet C.A.</p>
                     </div>
-                    <span class="text-sm font-bold px-4 py-1 bg-[#000000] text-[#EAECF0] mt-3 md:mt-0 sharp-edge uppercase tracking-widest">2025 – 2026</span>
+                    <span class="text-sm font-bold px-4 py-1 bg-[#FE7F2D] text-[#000000] mt-3 md:mt-0 sharp-edge uppercase tracking-widest">Jan 2026 – Present</span>
                 </div>
                 <ul class="space-y-3 text-[#000000] font-medium">
                     <li class="flex items-start gap-3">
                         <span class="text-[#FE7F2D] font-black text-lg leading-none">&rsaquo;</span>
-                        <span>Provide guidance and academic support to students from diverse cultural backgrounds.</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-[#FE7F2D] font-black text-lg leading-none">&rsaquo;</span>
-                        <span>Apply structured problem-solving skills to resolve interpersonal and academic challenges effectively.</span>
+                        <span>Lead fullstack development initiatives, focusing on API testing, project management, and delivering functional software architecture.</span>
                     </li>
                 </ul>
             </div>
+        </div>
+
+        <!-- More Experience Button -->
+        <div class="mt-14 text-center">
+            <a href="experience.html" class="inline-flex items-center gap-3 px-8 py-4 bg-[#000000] text-[#EAECF0] font-black text-sm uppercase tracking-widest border-4 border-[#000000] hover:bg-[#FE7F2D] hover:text-[#000000] transition-all duration-300 sharp-edge hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group">
+                View All Experience
+            </a>
         </div>
     </section>
 
@@ -429,9 +467,60 @@
                     <label for="message" class="block text-xs font-bold uppercase tracking-widest text-[#EAECF0] mb-2">Message</label>
                     <textarea name="message" id="message" rows="4" required class="w-full p-4 bg-[#000000] text-[#EAECF0] border-2 border-[#FE7F2D] sharp-edge focus:outline-none focus:bg-[#000000]/80"></textarea>
                 </div>
-                <button type="submit" id="submit-btn" class="w-full py-5 bg-[#FE7F2D] hover:bg-[#EAECF0] text-[#000000] font-black uppercase tracking-widest transition-colors sharp-edge border-2 border-[#FE7F2D]">
-                    Send Message
-                </button>
+                <!-- Inside the <form> -->
+            <button type="submit" id="submit-btn" class="send-message-btn w-full py-5 font-black uppercase tracking-widest sharp-edge border-2 border-[#FE7F2D]">
+                <span class="relative z-10 text-transition">Send Message</span>
+            </button>
+
+            <!-- Add to your <style> section in the <head> -->
+            <style>
+            /* Custom Neo-Brutalist Fill Animation for Contact Button */
+            .send-message-btn {
+                position: relative;
+                overflow: hidden;
+                background: #FE7F2D;
+                color: #000000;
+                cursor: pointer;
+                transition: box-shadow 0.3s ease, transform 0.3s ease;
+            }
+
+            .send-message-btn:hover {
+                transform: translate(-4px, -4px);
+                box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+            }
+
+            .send-message-btn:active {
+                transform: translate(-1px, -1px);
+                box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+            }
+
+            .send-message-btn::after {
+                content: "";
+                position: absolute;
+                bottom: -50%;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: #000000;
+                transform-origin: bottom center;
+                transition: transform 500ms cubic-bezier(0.48, 0, 0.12, 1);
+                transform: skewY(9.3deg) scaleY(0);
+                z-index: 1;
+            }
+
+            .send-message-btn:hover::after {
+                transform-origin: bottom center;
+                transform: skewY(9.3deg) scaleY(2.5);
+            }
+
+            .send-message-btn .text-transition {
+                transition: color 400ms ease;
+            }
+
+            .send-message-btn:hover .text-transition {
+                color: #FE7F2D;
+            }
+            </style>
             </form>
 
             <!-- Buy Me A Coffee QR & Link -->
@@ -563,6 +652,58 @@
                 }
             });
         });
+        // Typing Placeholder Logic
+        const messageInput = document.getElementById('message');
+        const placeholders = [
+            "What do you want to build?", 
+            "What's your idea?", 
+            "How can I help your team?", 
+            "Let's create something great."
+        ];
+        let pIdx = 0, charIdx = 0, isDeleting = false, typingTimeout;
+
+        function typePlaceholder() {
+            // Stop if user is focused on the input or has typed something
+            if (document.activeElement === messageInput || messageInput.value.length > 0) {
+                messageInput.setAttribute('placeholder', '');
+                return;
+            }
+            
+            const currentText = placeholders[pIdx];
+            
+            if (!isDeleting) {
+                messageInput.setAttribute('placeholder', currentText.substring(0, charIdx + 1));
+                charIdx++;
+                if (charIdx === currentText.length) {
+                    isDeleting = true;
+                    typingTimeout = setTimeout(typePlaceholder, 1500); // Pause before deleting
+                    return;
+                }
+            } else {
+                messageInput.setAttribute('placeholder', currentText.substring(0, charIdx - 1));
+                charIdx--;
+                if (charIdx === 0) {
+                    isDeleting = false;
+                    pIdx = (pIdx + 1) % placeholders.length; // Move to next phrase
+                }
+            }
+            
+            // Typing speed vs deleting speed
+            typingTimeout = setTimeout(typePlaceholder, isDeleting ? 40 : 80);
+        }
+
+        // Event listeners to manage focus
+        messageInput.addEventListener('focus', () => {
+            clearTimeout(typingTimeout);
+            messageInput.setAttribute('placeholder', '');
+        });
+
+        messageInput.addEventListener('blur', () => {
+            if (!messageInput.value) typePlaceholder();
+        });
+
+        // Start animation
+        typePlaceholder();
     </script>
 </body>
 </html>
