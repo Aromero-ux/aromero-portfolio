@@ -1,0 +1,193 @@
+/* ==========================================================================
+   Site styles
+   Layout and typography come from Tailwind (CDN). This file only holds what
+   utility classes can't express cleanly: the custom buttons, the scroll-reveal
+   animation and a couple of small helpers. Load it AFTER the Tailwind script.
+   ========================================================================== */
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Square corners everywhere. */
+.sharp-edge {
+    border-radius: 0 !important;
+}
+
+/* Keep anchored sections clear of the sticky navbar. */
+section[id],
+footer[id] {
+    scroll-margin-top: 80px;
+}
+
+/* Active navigation link (toggled by the IntersectionObserver in index.html). */
+.nav-link.active,
+.mobile-nav-link.active {
+    color: #FE7F2D;
+}
+
+/* Keep pixel art crisp when scaled. */
+.pixel-art {
+    image-rendering: pixelated;
+}
+
+/* --------------------------------------------------------------------------
+   Scroll reveal (class added by the IntersectionObserver on each page)
+   -------------------------------------------------------------------------- */
+.lazy-item {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.lazy-item.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   Brutalist button
+   Markup:  <a class="brutalist-btn back-orange sharp-edge">
+              <div class="brutalist-btn-content ...">Label</div>
+            </a>
+   The "content" (front) sits flush on a solid "back" layer (::after). On hover
+   the front lifts up and to the left and the back layer slides out behind it.
+   The back layer is black by default; add a modifier to change its color so it
+   contrasts with both the front and the page behind the button:
+     back-white   buttons on a dark background
+     back-orange / back-green / back-blue   accent buttons on the projects page
+   -------------------------------------------------------------------------- */
+.brutalist-btn {
+    --btn-back: #000000;
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.brutalist-btn.back-white  { --btn-back: #FFFFFF; }
+.brutalist-btn.back-orange { --btn-back: #FE7F2D; }
+.brutalist-btn.back-green  { --btn-back: #1DB954; }
+.brutalist-btn.back-blue   { --btn-back: #233D4D; }
+
+.brutalist-btn-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.3s ease, background-color 0.3s ease,
+                border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Back layer: hidden flush behind the front at rest (no anti-aliasing fringe). */
+.brutalist-btn::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--btn-back);
+    opacity: 0;
+    transform: translate(0, 0);
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.brutalist-btn:hover .brutalist-btn-content {
+    transform: translate(-4px, -4px);
+}
+
+.brutalist-btn:hover::after {
+    opacity: 1;
+    transform: translate(2px, 2px);
+}
+
+/* Pressed: the front drops back onto the back layer. */
+.brutalist-btn:active .brutalist-btn-content {
+    transform: translate(0, 0);
+}
+
+.brutalist-btn:active::after {
+    transform: translate(0, 0);
+}
+
+.brutalist-btn:focus-visible {
+    outline: 3px solid #FE7F2D;
+    outline-offset: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   Contact form submit button (colour wipe from the bottom on hover)
+   -------------------------------------------------------------------------- */
+.send-message-btn {
+    position: relative;
+    z-index: 1;
+    display: block;
+    overflow: hidden;
+    background: #000000;
+    color: #FE7F2D;
+    border: 2px solid #FE7F2D;
+    cursor: pointer;
+}
+
+.send-message-btn .text-transition {
+    position: relative;
+    z-index: 10;
+    font-weight: 900;
+    transition: color 600ms cubic-bezier(0.48, 0, 0.12, 1);
+}
+
+/* Oversized so the skewed wipe never leaves a corner uncovered. */
+.send-message-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -100%;
+    left: -50%;
+    z-index: 5;
+    width: 200%;
+    height: 300%;
+    background-color: #FE7F2D;
+    transform-origin: bottom center;
+    transform: skewY(9.3deg) scaleY(0);
+    transition: transform 600ms cubic-bezier(0.48, 0, 0.12, 1);
+}
+
+.send-message-btn:hover::after {
+    transform: skewY(9.3deg) scaleY(1.5);
+}
+
+.send-message-btn:hover .text-transition {
+    color: #000000;
+}
+
+.send-message-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Respect the "reduce motion" system setting
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .lazy-item {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    .brutalist-btn-content,
+    .brutalist-btn::after,
+    .send-message-btn::after,
+    .send-message-btn .text-transition {
+        transition: none;
+    }
+}

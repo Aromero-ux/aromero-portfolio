@@ -1,132 +1,134 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Experience | Alessandro Romero</title>
+    <title>Professional Experience | Alessandro Romero</title>
+    
+    <!-- Favicon & CSS -->
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .sharp-edge { border-radius: 0 !important; }
-        .lazy-item { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
-        .lazy-item.is-visible { opacity: 1; transform: translateY(0); }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-[#EAECF0] text-[#000000] font-sans antialiased selection:bg-[#FE7F2D] selection:text-[#000000]">
     
-    <!-- Navbar placeholder (Copy your existing nav here) -->
-
-    <header class="bg-[#000000] pt-16 pb-16 border-b-8 border-[#FE7F2D]">
-        <div class="max-w-5xl mx-auto px-6">
-            <h1 class="text-4xl sm:text-5xl font-black text-[#EAECF0] uppercase tracking-tight mb-4">Professional Experience</h1>
-            <a href="index.html" class="text-[#FE7F2D] text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">&larr; Back to Home</a>
+    <header class="bg-[#000000] pt-20 pb-16 border-b-8 border-[#FE7F2D]">
+        <div class="max-w-5xl mx-auto px-6 flex flex-col items-start">
+            <h1 class="text-5xl sm:text-6xl font-black text-[#EAECF0] uppercase tracking-tight mb-6">Professional Experience</h1>
+            <a href="index.html" class="text-[#FE7F2D] text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4 flex items-center gap-2">
+                &larr; Back to Home
+            </a>
         </div>
     </header>
 
-    <!-- Partner Logos Banner (Styled after reference image) -->
+    <!-- Partner Logos Banner -->
     <div class="bg-[#1a1a1a] border-b-4 border-[#000000] py-8 overflow-hidden">
         <div class="max-w-5xl mx-auto px-6 flex justify-between items-center opacity-40 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
-            <!-- Replace these text placeholders with actual <img> tags later -->
             <span class="text-[#EAECF0] font-black text-xl uppercase tracking-widest">Trevecca</span>
             <span class="text-[#EAECF0] font-black text-xl uppercase tracking-widest">Medianet</span>
-            <span class="text-[#EAECF0] font-black text-xl uppercase tracking-widest">AmeriCorps</span>
         </div>
     </div>
 
-    <main class="py-20 max-w-5xl mx-auto px-6 space-y-12">
-        
-        <!-- Experience 1: Set Ups Coordinator (Trevecca) -->
-        <div class="lazy-item bg-[#EAECF0] border-4 border-[#000000] p-8 hover:border-[#552C6A] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-black text-[#000000] uppercase">Set Ups Coordinator</h2>
-                    <a href="https://www.trevecca.edu/" target="_blank" class="text-[#552C6A] font-bold mt-1 uppercase tracking-wider hover:underline decoration-2 underline-offset-2">Trevecca Nazarene University</a>
+    <!-- Full Width Experience Blocks -->
+    <main>
+        <!-- Experience 1: Set Ups Coordinator -->
+        <section class="py-20 bg-[#EAECF0] border-b-8 border-[#552C6A] lazy-item">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 border-b-2 border-[#000000]/20 pb-4">
+                    <div>
+                        <h2 class="text-3xl sm:text-4xl font-black text-[#000000] uppercase tracking-tight">Set Ups Coordinator</h2>
+                        <a href="https://www.trevecca.edu/" target="_blank" class="text-[#552C6A] font-bold mt-2 text-lg uppercase tracking-wider hover:underline decoration-2 underline-offset-2 block">Trevecca Nazarene University</a>
+                    </div>
+                    <span class="text-sm font-bold px-4 py-2 bg-[#552C6A] text-[#ffffff] mt-4 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#552C6A]">Sep 2026 – Present</span>
                 </div>
-                <span class="text-sm font-bold px-4 py-1 bg-[#552C6A] text-[#ffffff] mt-3 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#552C6A]">Sep 2026 – Present</span>
+                <div class="flex flex-col md:flex-row gap-12">
+                    <p class="text-[#000000]/80 text-lg font-medium leading-relaxed md:w-2/3">
+                        Manage on-site logistics, team coordination, and event setups across campus facilities. Guaranteeing seamless execution of university-wide events through strategic planning and cross-functional leadership.
+                    </p>
+                    <div class="md:w-1/3 flex flex-wrap gap-2 h-fit">
+                        <span class="px-3 py-1.5 bg-[#ffffff] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Leadership</span>
+                        <span class="px-3 py-1.5 bg-[#ffffff] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Strategic Planning</span>
+                    </div>
+                </div>
             </div>
-            <ul class="space-y-3 text-[#000000] font-medium mb-6">
-                <li class="flex items-start gap-3">
-                    <span class="text-[#552C6A] font-black text-lg leading-none">&rsaquo;</span>
-                    <span>Manage on-site logistics, team coordination, and event setups across campus facilities.</span>
-                </li>
-            </ul>
-            <div class="flex flex-wrap gap-2 pt-4 border-t-2 border-[#000000]/20">
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Leadership</span>
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Logistics</span>
-            </div>
-        </div>
+        </section>
 
-        <!-- Experience 2: Software Engineer (Medianet) -->
-        <div class="lazy-item bg-[#EAECF0] border-4 border-[#000000] p-8 hover:border-[#0F71C3] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-black text-[#000000] uppercase">Software Engineer <span class="text-sm text-[#000000]/50 tracking-widest">(Freelance)</span></h2>
-                    <a href="https://medianet.com.ve/" target="_blank" class="text-[#0F71C3] font-bold mt-1 uppercase tracking-wider hover:underline decoration-2 underline-offset-2">Soluciones Medianet C.A.</a>
+        <!-- Experience 2: Software Engineer -->
+        <section class="py-20 bg-[#ffffff] border-b-8 border-[#0F71C3] lazy-item">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 border-b-2 border-[#000000]/20 pb-4">
+                    <div>
+                        <h2 class="text-3xl sm:text-4xl font-black text-[#000000] uppercase tracking-tight">Software Engineer <span class="text-lg text-[#000000]/50 tracking-widest">(Freelance)</span></h2>
+                        <a href="https://medianet.com.ve/" target="_blank" class="text-[#0F71C3] font-bold mt-2 text-lg uppercase tracking-wider hover:underline decoration-2 underline-offset-2 block">Soluciones Medianet C.A.</a>
+                    </div>
+                    <span class="text-sm font-bold px-4 py-2 bg-[#0F71C3] text-[#ffffff] mt-4 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#0F71C3]">Jan 2026 – Present</span>
                 </div>
-                <span class="text-sm font-bold px-4 py-1 bg-[#0F71C3] text-[#ffffff] mt-3 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#0F71C3]">Jan 2026 – Present</span>
+                <div class="flex flex-col md:flex-row gap-12">
+                    <div class="md:w-2/3 space-y-4">
+                        <p class="text-[#000000]/80 text-lg font-medium leading-relaxed">Lead fullstack development initiatives, focusing on functional software architecture and delivering high-quality user experiences through iterative design.</p>
+                        <p class="text-[#000000]/80 text-lg font-medium leading-relaxed">Execute rigorous API testing and project management methodologies utilizing tools like Postman and Blazor frameworks.</p>
+                    </div>
+                    <div class="md:w-1/3 flex flex-wrap gap-2 h-fit">
+                        <span class="px-3 py-1.5 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">API Testing</span>
+                        <span class="px-3 py-1.5 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Postman API</span>
+                        <span class="px-3 py-1.5 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Software Design</span>
+                    </div>
+                </div>
             </div>
-            <ul class="space-y-3 text-[#000000] font-medium mb-6">
-                <li class="flex items-start gap-3">
-                    <span class="text-[#0F71C3] font-black text-lg leading-none">&rsaquo;</span>
-                    <span>Lead fullstack development initiatives, focusing on functional software architecture.</span>
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="text-[#0F71C3] font-black text-lg leading-none">&rsaquo;</span>
-                    <span>Execute rigorous API testing and project management methodologies.</span>
-                </li>
-            </ul>
-            <div class="flex flex-wrap gap-2 pt-4 border-t-2 border-[#000000]/20">
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">API Testing</span>
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Project Management</span>
-            </div>
-        </div>
+        </section>
 
-        <!-- Experience 3: Peer Mentor (Trevecca) -->
-        <div class="lazy-item bg-[#EAECF0] border-4 border-[#000000] p-8 hover:border-[#552C6A] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-black text-[#000000] uppercase">Peer Mentor</h2>
-                    <a href="https://www.trevecca.edu/" target="_blank" class="text-[#552C6A] font-bold mt-1 uppercase tracking-wider hover:underline decoration-2 underline-offset-2">Trevecca Nazarene University</a>
+        <!-- Experience 3: Peer Mentor -->
+        <section class="py-20 bg-[#EAECF0] border-b-8 border-[#552C6A] lazy-item">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 border-b-2 border-[#000000]/20 pb-4">
+                    <div>
+                        <h2 class="text-3xl sm:text-4xl font-black text-[#000000] uppercase tracking-tight">Peer Mentor</h2>
+                        <a href="https://www.trevecca.edu/" target="_blank" class="text-[#552C6A] font-bold mt-2 text-lg uppercase tracking-wider hover:underline decoration-2 underline-offset-2 block">Trevecca Nazarene University</a>
+                    </div>
+                    <span class="text-sm font-bold px-4 py-2 bg-[#552C6A] text-[#ffffff] mt-4 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#552C6A]">Aug 2025 – May 2026</span>
                 </div>
-                <span class="text-sm font-bold px-4 py-1 bg-[#552C6A] text-[#ffffff] mt-3 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#552C6A]">Aug 2025 – May 2026</span>
+                <div class="flex flex-col md:flex-row gap-12">
+                    <p class="text-[#000000]/80 text-lg font-medium leading-relaxed md:w-2/3">
+                        Worked alongside students from a wide range of different cultural and academic backgrounds to foster development, employing advanced interpersonal skills and facilitating team-building activities.
+                    </p>
+                    <div class="md:w-1/3 flex flex-wrap gap-2 h-fit">
+                        <span class="px-3 py-1.5 bg-[#ffffff] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Interpersonal Skills</span>
+                        <span class="px-3 py-1.5 bg-[#ffffff] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Team Building</span>
+                    </div>
+                </div>
             </div>
-            <ul class="space-y-3 text-[#000000] font-medium mb-6">
-                <li class="flex items-start gap-3">
-                    <span class="text-[#552C6A] font-black text-lg leading-none">&rsaquo;</span>
-                    <span>Worked alongside students from a wide range of different cultural and academic backgrounds to foster development.</span>
-                </li>
-            </ul>
-            <div class="flex flex-wrap gap-2 pt-4 border-t-2 border-[#000000]/20">
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Interpersonal Skills</span>
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Team Building</span>
-            </div>
-        </div>
+        </section>
 
-        <!-- Experience 4: Trevecca Urban Farmer (AmeriCorps) -->
-        <div class="lazy-item bg-[#EAECF0] border-4 border-[#000000] p-8 hover:border-[#552C6A] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-black text-[#000000] uppercase">Trevecca Urban Farmer</h2>
-                    <a href="https://www.trevecca.edu/" target="_blank" class="text-[#552C6A] font-bold mt-1 uppercase tracking-wider hover:underline decoration-2 underline-offset-2">AmeriCorps VISTA</a>
+        <!-- Experience 4: Urban Farmer -->
+        <section class="relative py-20 bg-[#ffffff] border-b-8 border-[#552C6A] lazy-item group overflow-hidden">
+            
+            <!-- Decorative pixel-art background -->
+            <div class="pixel-art absolute inset-0 z-0 opacity-10 group-hover:opacity-30 transition-opacity duration-700 bg-[url('assets/farm-pixel.gif')] bg-cover bg-center" aria-hidden="true"></div>
+            
+            <div class="max-w-5xl mx-auto px-6 relative z-10">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 border-b-2 border-[#000000]/20 pb-4">
+                    <div>
+                        <h2 class="text-3xl sm:text-4xl font-black text-[#000000] uppercase tracking-tight">Urban Farmer</h2>
+                        <a href="https://www.trevecca.edu/" target="_blank" class="text-[#552C6A] font-bold mt-2 text-lg uppercase tracking-wider hover:underline decoration-2 underline-offset-2 block">Trevecca Nazarene University</a>
+                    </div>
+                    <span class="text-sm font-bold px-4 py-2 bg-[#552C6A] text-[#ffffff] mt-4 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#552C6A]">Aug 2023 – May 2024</span>
                 </div>
-                <span class="text-sm font-bold px-4 py-1 bg-[#552C6A] text-[#ffffff] mt-3 md:mt-0 sharp-edge uppercase tracking-widest border-2 border-[#552C6A]">Aug 2023 – May 2024</span>
+                <div class="flex flex-col md:flex-row gap-12 bg-[#ffffff]/60 p-6 backdrop-blur-sm border-2 border-[#000000]/10 sharp-edge">
+                    <p class="text-[#000000] text-lg font-bold leading-relaxed md:w-2/3">
+                        Supported sustainable agriculture initiatives and championed community food security programs. Gained hands-on experience in organic farming methodologies, environmental science preservation, and animal welfare routines.
+                    </p>
+                    <div class="md:w-1/3 flex flex-wrap gap-2 h-fit">
+                        <span class="px-3 py-1.5 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Environmental Science</span>
+                        <span class="px-3 py-1.5 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Animal Welfare</span>
+                        <span class="px-3 py-1.5 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Sustainable Agriculture</span>
+                    </div>
+                </div>
             </div>
-            <ul class="space-y-3 text-[#000000] font-medium mb-6">
-                <li class="flex items-start gap-3">
-                    <span class="text-[#552C6A] font-black text-lg leading-none">&rsaquo;</span>
-                    <span>Supported sustainable agriculture initiatives and championed community food security programs.</span>
-                </li>
-            </ul>
-            <div class="flex flex-wrap gap-2 pt-4 border-t-2 border-[#000000]/20">
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Environmental Science</span>
-                <span class="px-2.5 py-1 bg-[#EAECF0] text-[#000000] border-2 border-[#000000]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Animal Welfare</span>
-            </div>
-        </div>
+        </section>
 
     </main>
 
-    <!-- Footer placeholder (Copy your existing footer here) -->
-
+    <!-- Interactive Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const lazyItems = document.querySelectorAll('.lazy-item');
@@ -138,7 +140,6 @@
                     }
                 });
             }, { rootMargin: '0px 0px -50px 0px', threshold: 0.1 });
-
             lazyItems.forEach(item => observer.observe(item));
         });
     </script>
