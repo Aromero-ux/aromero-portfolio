@@ -55,7 +55,7 @@ footer[id] {
    The back layer is black by default; add a modifier to change its color so it
    contrasts with both the front and the page behind the button:
      back-white   buttons on a dark background
-     back-orange / back-green / back-blue   accent buttons on the projects page
+     back-orange / back-sky / back-red   accent buttons on the projects page
    -------------------------------------------------------------------------- */
 .brutalist-btn {
     --btn-back: #000000;
@@ -69,8 +69,8 @@ footer[id] {
 
 .brutalist-btn.back-white  { --btn-back: #FFFFFF; }
 .brutalist-btn.back-orange { --btn-back: #FE7F2D; }
-.brutalist-btn.back-green  { --btn-back: #1DB954; }
-.brutalist-btn.back-blue   { --btn-back: #233D4D; }
+.brutalist-btn.back-sky    { --btn-back: #7ED9F1; }
+.brutalist-btn.back-red    { --btn-back: #990001; }
 
 .brutalist-btn-content {
     position: relative;
