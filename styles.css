@@ -225,3 +225,151 @@ footer[id] {
         transition: none;
     }
 }
+
+
+/* --------------------------------------------------------------------------
+   WebGL accents (drawn by fx.js)
+   The canvases start hidden and fade in once the first frame is drawn.
+   If WebGL is unavailable they simply stay hidden and the page looks as before.
+   -------------------------------------------------------------------------- */
+.fx-canvas {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+}
+
+.fx-canvas[hidden] {
+    display: none;
+}
+
+.fx-canvas.is-live {
+    opacity: var(--fx-op, 1);
+}
+
+/* AR monogram: a square stage on the right of the hero when there is room,
+   otherwise a dim backdrop behind the text (tablets and phones). */
+.fx-mono {
+    --fx-size: clamp(300px, 31vw, 540px);
+    z-index: 1;
+    top: 50%;
+    right: 2vw;
+    width: var(--fx-size);
+    height: var(--fx-size);
+    transform: translateY(-50%);
+}
+
+.fx-mono[data-layout="bg"] {
+    --fx-op: 0.4;
+    inset: 0;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+}
+
+/* Short sections: the canvas simply fills the section behind its content. */
+.fx-fill {
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Tall sections (projects, experience, contact): ONE viewport-sized canvas that
+   stays put while the content scrolls over it. Cost never grows with section
+   height. The wrapper clips it to the section (overflow: clip keeps sticky working). */
+.fx-wrap {
+    position: relative;
+    overflow: clip;
+}
+
+.fx-sticky {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100vh;            /* vh (not svh) so phone toolbars never resize it mid-scroll */
+    margin-bottom: -100vh;    /* takes no space; the section is drawn over it */
+}
+
+.fx-sticky--footer {
+    margin-top: -6rem;        /* cancels the footer's py-24 so the canvas starts at its top edge */
+}
+
+/* Comparison panel (remove by setting COMPARE_PANEL = false in fx.js) */
+.fx-panel {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    z-index: 60;
+    max-width: calc(100vw - 24px);
+    padding: 10px 12px;
+    background: #000000;
+    color: #EAECF0;
+    border: 3px solid #FE7F2D;
+    box-shadow: 5px 5px 0 #FE7F2D;
+    font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.fx-panel .fx-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: #FE7F2D;
+}
+
+.fx-panel .fx-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.fx-panel .fx-label {
+    min-width: 46px;
+    opacity: 0.6;
+}
+
+.fx-panel button {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: #EAECF0;
+    background: #000000;
+    border: 2px solid #EAECF0;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+
+.fx-panel button:hover {
+    border-color: #FE7F2D;
+}
+
+.fx-panel button[aria-pressed="true"] {
+    background: #FE7F2D;
+    border-color: #FE7F2D;
+    color: #000000;
+}
+
+.fx-panel .fx-min {
+    padding: 0 7px;
+    line-height: 1.4;
+}
+
+.fx-panel.is-collapsed .fx-body {
+    display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fx-canvas {
+        transition: none;
+    }
+}
