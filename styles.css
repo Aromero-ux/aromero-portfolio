@@ -300,76 +300,234 @@ footer[id] {
     margin-top: -6rem;        /* cancels the footer's py-24 so the canvas starts at its top edge */
 }
 
-/* Comparison panel (remove by setting COMPARE_PANEL = false in fx.js) */
-.fx-panel {
-    position: fixed;
-    left: 12px;
-    bottom: 12px;
-    z-index: 60;
-    max-width: calc(100vw - 24px);
-    padding: 10px 12px;
-    background: #000000;
-    color: #EAECF0;
-    border: 3px solid #FE7F2D;
-    box-shadow: 5px 5px 0 #FE7F2D;
-    font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-}
-
-.fx-panel .fx-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    color: #FE7F2D;
-}
-
-.fx-panel .fx-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.fx-panel .fx-label {
-    min-width: 46px;
-    opacity: 0.6;
-}
-
-.fx-panel button {
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    color: #EAECF0;
-    background: #000000;
-    border: 2px solid #EAECF0;
-    padding: 5px 8px;
-    cursor: pointer;
-}
-
-.fx-panel button:hover {
-    border-color: #FE7F2D;
-}
-
-.fx-panel button[aria-pressed="true"] {
-    background: #FE7F2D;
-    border-color: #FE7F2D;
-    color: #000000;
-}
-
-.fx-panel .fx-min {
-    padding: 0 7px;
-    line-height: 1.4;
-}
-
-.fx-panel.is-collapsed .fx-body {
-    display: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
     .fx-canvas {
         transition: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Featured projects roulette (driven by roulette.js)
+   The cards are laid out as a 3D wheel: each one sits on a circle and the
+   whole ring turns to bring the next project to the front. Until the script
+   adds .is-ready they are an ordinary two-column grid.
+   -------------------------------------------------------------------------- */
+.roulette {
+    --card-w: min(46rem, calc(100vw - 3rem));
+    --card-h: 34rem;      /* measured from the tallest card by the script */
+    --r: 40rem;           /* wheel radius, set by the script */
+    --turn: 0;            /* wheel rotation in degrees, set by the script */
+    --roulette-interval: 5600ms;
+}
+
+.roulette:not(.is-ready) .roulette-pointer,
+.roulette:not(.is-ready) .roulette-controls {
+    display: none;
+}
+
+.roulette.is-ready .roulette-stage {
+    position: relative;
+    width: 100vw;                          /* full-bleed so the neighbouring cards peek in from the sides */
+    margin-left: calc(50% - 50vw);
+    height: calc(var(--card-h) + 3.5rem);
+    perspective: 1900px;
+    perspective-origin: 50% 40%;
+    overflow: clip;
+}
+
+.roulette.is-ready .roulette-ring {
+    display: block;
+    position: absolute;
+    top: 2.25rem;
+    left: 0;
+    right: 0;
+    height: var(--card-h);
+    transform-style: preserve-3d;
+    transform: translateZ(calc(var(--r) * -1)) rotateY(calc(var(--turn) * -1deg));
+    transition: transform 1.35s cubic-bezier(0.2, 0.9, 0.25, 1.07);   /* a wheel settling, with a tiny overshoot */
+    will-change: transform;
+}
+
+.roulette.is-ready .roulette-card {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: var(--card-w);
+    height: var(--card-h);
+    margin-left: calc(var(--card-w) / -2);
+    transform: rotateY(calc(var(--i) * 360deg / var(--slots))) translateZ(var(--r));
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.roulette.is-measuring .roulette-card {
+    height: auto;
+}
+
+/* Cards that are not at the front sink into shadow. */
+.roulette.is-ready .roulette-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #000000;
+    opacity: 0.72;
+    pointer-events: none;
+    transition: opacity 1s ease;
+}
+
+.roulette.is-ready .roulette-card.is-adjacent::after {
+    opacity: 0.5;
+}
+
+.roulette.is-ready .roulette-card.is-active::after {
+    opacity: 0;
+}
+
+/* The roulette pointer: flicks a little every time the wheel turns. */
+.roulette-pointer {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 5;
+    width: 30px;
+    height: 26px;
+    margin-left: -15px;
+    background: #FE7F2D;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: 50% 0;
+}
+
+.roulette-pointer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #000000;
+    clip-path: polygon(14% 0, 86% 0, 50% 76%);
+    transform: translateY(2px);
+    z-index: -1;
+}
+
+.roulette-pointer.is-tick {
+    animation: roulette-tick 0.7s ease-out;
+}
+
+@keyframes roulette-tick {
+    0%   { transform: rotate(0); }
+    22%  { transform: rotate(-18deg); }
+    55%  { transform: rotate(7deg); }
+    100% { transform: rotate(0); }
+}
+
+.roulette-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+}
+
+.roulette-btn,
+.roulette-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    padding: 0 0.75rem;
+    background: #000000;
+    color: #EAECF0;
+    border: 4px solid #000000;
+    box-shadow: 4px 4px 0 #FE7F2D;
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.roulette-btn:hover,
+.roulette-dot:hover {
+    background: #FE7F2D;
+    color: #000000;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #000000;
+}
+
+.roulette-btn:active,
+.roulette-dot:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #000000;
+}
+
+.roulette-btn:focus-visible,
+.roulette-dot:focus-visible {
+    outline: 3px solid #FE7F2D;
+    outline-offset: 4px;
+}
+
+.roulette-btn svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+}
+
+.roulette-dots {
+    display: flex;
+    gap: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+.roulette-dot {
+    font-size: 0.75rem;
+    background: #EAECF0;
+    color: #000000;
+}
+
+.roulette-dot[aria-current="true"] {
+    background: #000000;
+    color: #EAECF0;
+}
+
+/* Timer bar: fills while the next project is on its way. */
+.roulette-progress {
+    position: relative;
+    flex-basis: 100%;
+    height: 6px;
+    margin-top: 0.75rem;
+    background: rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.roulette-progress > span {
+    position: absolute;
+    inset: 0;
+    background: #FE7F2D;
+    transform: scaleX(0);
+    transform-origin: left;
+}
+
+.roulette.is-playing .roulette-progress > span {
+    animation: roulette-fill var(--roulette-interval) linear forwards;
+}
+
+@keyframes roulette-fill {
+    to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .roulette.is-ready .roulette-ring,
+    .roulette.is-ready .roulette-card::after {
+        transition: none;
+    }
+
+    .roulette-pointer.is-tick {
+        animation: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .roulette.is-ready .roulette-card {
+        padding: 1.25rem;     /* the cards are narrow on phones, so give the text more room */
     }
 }

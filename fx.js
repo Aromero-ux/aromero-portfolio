@@ -1,34 +1,28 @@
 /* ==========================================================================
    WEBGL ACCENTS  (raw WebGL, no libraries)
 
-   One effect per section, all different, all in the site's palette:
+   HERO         the AR logo as a 3D wireframe (tilts to the cursor, click spins it)
+   SECTIONS     drifting topographic contour lines behind skills, projects,
+                experience and education, tinted per background: they bulge under
+                the cursor, ripple on click, and flow as you scroll
+   CONTACT      a slow sunburst whose rays point at the cursor
 
-   HERO         MONOGRAM   the AR logo as a 3D wireframe (tilts to the cursor, click spins)
-   SKILLS       CONTOURS   drifting topographic lines (cursor raises a hill)
-   PROJECTS     CELLS      a network of drifting Voronoi cells (cursor lights up cells)
-   EXPERIENCE   HALFTONE   a printed halftone dot wave (cursor swells the dots)
-   EDUCATION    DITHER     ordered-dither pixels that dissolve the section's edges
-   CONTACT      RAYS       a slow sunburst that points its rays at the cursor
+   To drop an effect from a section, delete that section's <canvas> in index.html.
 
-   Performance rules every effect follows:
+   Performance rules:
    - starts only after the page has loaded and the browser is idle
    - creates its GL context only when it first scrolls into view
    - draws only while its canvas is on screen and the tab is visible
-   - the tall light sections use ONE viewport-sized canvas that stays put while
+   - the tall sections share ONE viewport-sized canvas each that stays put while
      the content scrolls over it, so cost never grows with section height
    - ~60fps while you interact or scroll, ~30fps (24fps on phones) when idle
-   - pixel ratio is kept low, and lowered further if frames run long
+   - crisp on high-DPI screens, with a pixel budget and automatic step-down
+     if frames run long
    - refuses to run on software rendering; the plain page stays as the fallback
    - prefers-reduced-motion gets a single still frame
    ========================================================================== */
 (() => {
   "use strict";
-
-  /* The little FX box in the corner is only for comparing / toggling effects.
-     Set this to false (and edit DEFAULTS) before you ship. */
-  const COMPARE_PANEL = false;
-  const DEFAULTS = { hero: "monogram", skills: "contours", projects: "cells", experience: "halftone", education: "dither", contact: "rays" };
-  // any slot can be set to "off", e.g. { ...DEFAULTS, education: "off" }
 
   if (!("IntersectionObserver" in window) || !("ResizeObserver" in window)) return;
 
@@ -40,7 +34,6 @@
   /* ---- Palette (matches the site) -------------------------------------- */
   const ORANGE = [0.996, 0.498, 0.176];  // #FE7F2D
   const CREAM = [0.918, 0.925, 0.941];   // #EAECF0
-  const NAVY = [0.137, 0.239, 0.302];    // #233D4D
 
   /* ---- Pointer (shared) ------------------------------------------------- */
   const P = { x: 0, y: 0, seen: false, last: 0 };
@@ -52,7 +45,6 @@
     P.x = e.clientX; P.y = e.clientY; P.seen = true; P.last = performance.now();
   }, { passive: true });
   addEventListener("pointerdown", (e) => {
-    if (e.target.closest && e.target.closest(".fx-panel")) return;
     P.x = e.clientX; P.y = e.clientY; P.last = performance.now();
     stages.forEach((s) => s.on && s.visible && s.fx && s.fx.click(e.clientX, e.clientY));
   }, { passive: true });
@@ -121,7 +113,7 @@
     return o;
   };
 
-  /* Shared GLSL: value noise + fbm + Bayer ordered-dither matrix */
+  /* Shared GLSL: value noise + fbm */
   const GLSL_NOISE = `
     float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
     float vnoise(vec2 p){
@@ -215,7 +207,9 @@
       if (this.fx.layout) this.fx.layout();
       const cssW = this.canvas.clientWidth, cssH = this.canvas.clientHeight;
       if (!cssW || !cssH) return;
-      const s = this.fx.pixelScale(this.quality);
+      let s = this.fx.pixelScale(this.quality);
+      const budget = this.opts.maxPixels;                       // cap total pixels on very large screens
+      if (budget && cssW * cssH * s * s > budget) s = Math.sqrt(budget / (cssW * cssH));
       const w = Math.max(2, Math.round(cssW * s)), h = Math.max(2, Math.round(cssH * s));
       if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
       this.gl.viewport(0, 0, w, h);
@@ -560,31 +554,23 @@
   }
 
   /* ======================================================================
-     FIELD EFFECTS: one tiny engine, four fragment shaders
+     CONTOURS: a fragment shader engine for the topographic lines
      ====================================================================== */
   const FULL_VS = `
     attribute vec2 aPos;
     void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
   `;
-  const GLSL_BAYER = `
-    float bayer2(vec2 a) { a = floor(a); return fract(a.x * 0.5 + a.y * a.y * 0.75); }
-    float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
-    float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
-  `;
-  const GLSL_OVER = `
-    void over(inout vec4 d, vec3 c, float a) { d = vec4(c * a + d.rgb * (1.0 - a), a + d.a * (1.0 - a)); }
-  `;
-  const V3 = (c) => `vec3(${c.map((n) => n.toFixed(3)).join(",")})`;
   const BLACK = [0, 0, 0];
+  const V3 = (c) => `vec3(${c.map((n) => n.toFixed(3)).join(",")})`;
 
   class FieldFX {
     constructor(gl, stage, cfg) {
       this.gl = gl; this.canvas = stage.canvas; this.cfg = cfg;
-      const deriv = cfg.deriv ? !!gl.getExtension("OES_standard_derivatives") : false;
+      const deriv = !!gl.getExtension("OES_standard_derivatives");
       this.prog = makeProgram(gl, FULL_VS, cfg.frag(deriv), ["aPos"]);
-      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uPtr", "uRip", "uScroll"].concat(cfg.uniforms || []));
+      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uPtr", "uRip", "uScroll", "uInk", "uAcc", "uTone", "uSeed", "uFreq", "uPulse", "uLinePx", "uS"]);
       this.buf = fullscreenTriangle(gl);
-      this.rip = makeRipples(cfg.rip);
+      this.rip = makeRipples(6);
       this.ptr = { x: 0.5, y: 0.5, amp: 0 };
       this.last = { x: 1e9, y: 1e9, t: -1 };
       this.w = 2; this.h = 2; this.cssW = 2; this.cssH = 2; this.s = 1; this.t = 0;
@@ -592,15 +578,19 @@
       gl.disable(gl.BLEND);
       gl.disable(gl.DEPTH_TEST);
     }
-    pixelScale(q) { return this.cfg.scale(lite(), q); }
+    // crisp on high-DPI screens (the stage also enforces a pixel budget)
+    pixelScale(q) {
+      if (this.cfg.scale) return this.cfg.scale(lite(), q);
+      return (lite() ? 0.6 : Math.min(devicePixelRatio || 1, 1.5)) * q;
+    }
     resize(w, h, cssW, cssH, s) { this.w = w; this.h = h; this.cssW = cssW; this.cssH = cssH; this.s = s; }
 
-    // pointer in "height units": (css px / canvas css height), y up. Same space as the shaders' p.
+    // pointer in "height units": (css px / canvas css height), y up. Same space as the shader's ps.
     toField(x, y, r) { return { x: x / r.height, y: (r.height - y) / r.height }; }
 
     step(dt, now, t, still) {
       this.t = t;
-      const c = this.cfg, k = (rate) => 1 - Math.exp(-dt * rate);
+      const k = (rate) => 1 - Math.exp(-dt * rate);
       const lp = still || lite() ? null : localPointer(this.canvas, now, true);
       let ampT = 0;
       if (lp) {
@@ -610,8 +600,8 @@
         this.ptr.y += (f.y - this.ptr.y) * k(12);
         ampT = 1;
         const moved = Math.hypot(f.x - this.last.x, f.y - this.last.y);
-        if (c.move && moved > c.move.min && t - this.last.t > c.move.gap) {
-          this.rip.add(f.x, f.y, t, c.move.strength(moved), c.move.life || 3.5);
+        if (this.cfg.trail !== false && moved > 0.1 && t - this.last.t > 0.18) {
+          this.rip.add(f.x, f.y, t, 0.5, 4);
           this.last = { x: f.x, y: f.y, t };
         }
       }
@@ -619,13 +609,14 @@
       if (this.ptr.amp < 0.003) this.ptr.amp = 0;
     }
     busy(now) {
-      return (!lite() && pointerActive(now)) || this.ptr.amp > 0.02 || this.t < this.rip.end || (!!this.cfg.scroll && scrolling(now));
+      return (!lite() && pointerActive(now)) || this.ptr.amp > 0.02 || this.t < this.rip.end ||
+        (!!this.cfg.scroll && scrolling(now));
     }
     click(cx, cy) {
       const r = hit(this.canvas, cx, cy, 0);
       if (!r) return;
       const f = this.toField(cx - r.left, cy - r.top, r);
-      this.rip.add(f.x, f.y, this.t, this.cfg.click.strength, this.cfg.click.life);
+      this.rip.add(f.x, f.y, this.t, this.cfg.click || 1.6, 4.5);
     }
     draw(t) {
       const gl = this.gl, U = this.U, c = this.cfg;
@@ -639,14 +630,19 @@
       gl.uniform3f(U.uPtr, this.ptr.x, this.ptr.y, this.ptr.amp);
       gl.uniform4fv(U.uRip, this.rip.a);
       gl.uniform1f(U.uScroll, c.scroll ? (window.scrollY * c.scroll) / this.cssH : 0);
-      if (c.extra) c.extra(gl, U, this);
+      gl.uniform3f(U.uInk, c.ink[0], c.ink[1], c.ink[2]);
+      gl.uniform3f(U.uAcc, ORANGE[0], ORANGE[1], ORANGE[2]);
+      gl.uniform2f(U.uTone, c.minor, c.major);
+      gl.uniform2f(U.uSeed, c.seed[0], c.seed[1]);
+      gl.uniform1f(U.uFreq, c.freq);
+      gl.uniform1f(U.uPulse, c.pulse);
+      gl.uniform1f(U.uLinePx, 1.0667 * this.s);      // line width stays ~1px of CSS at any resolution
+      gl.uniform1f(U.uS, this.s);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disableVertexAttribArray(0);
     }
   }
-  const field = (cfg) => class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
 
-  /* ---- SKILLS: contour lines (navy background) ------------------------- */
   const CONTOUR_FS = (deriv) => `
     ${deriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
     ${FRAG_PRECISION}
@@ -655,21 +651,29 @@
     uniform vec3 uPtr;
     uniform vec4 uRip[6];
     uniform float uScroll;
+    uniform vec3 uInk;
+    uniform vec3 uAcc;
+    uniform vec2 uTone;
+    uniform vec2 uSeed;
+    uniform float uFreq;
+    uniform float uPulse;
+    uniform float uLinePx;
+    uniform float uS;
     ${GLSL_NOISE}
     void main() {
-      vec2 frag = gl_FragCoord.xy;
-      vec2 p = frag / uRes.y;
+      vec2 ps = gl_FragCoord.xy / uRes.y;                       // screen space, in canvas heights
+      vec2 p = (ps + vec2(0.0, uScroll)) * uFreq + uSeed;       // terrain space (scrolls slower than the page)
       float t = uT * 0.02;
       float f = fbm(p * 1.7 + vec2(t * 3.0, -t * 2.0));
       f += 0.3 * fbm(p * 3.6 - vec2(t * 2.2, t * 1.4) + 7.0);
 
-      vec2 q = p - uPtr.xy;
+      vec2 q = ps - uPtr.xy;                                    // the cursor raises a hill
       float heat = uPtr.z * 0.22 * exp(-dot(q, q) * 26.0);
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 6; i++) {                             // clicks send rings through the terrain
         vec4 r = uRip[i];
         float age = uT - r.z;
         if (r.w > 0.0 && age >= 0.0) {
-          float d = distance(p, r.xy) - age * 0.42;
+          float d = distance(ps, r.xy) - age * 0.42;
           heat += r.w * 0.16 * exp(-age * 0.9) * exp(-d * d * 120.0) * cos(d * 26.0);
         }
       }
@@ -678,211 +682,20 @@
       float level = f * 15.0;
       float dist = abs(fract(level + 0.5) - 0.5);
       ${deriv ? "float fw = max(fwidth(level), 1e-4);" : "float fw = 0.05;"}
-      float line = 1.0 - clamp(dist / (fw * 0.8), 0.0, 1.0);
-      line *= 1.0 - smoothstep(0.35, 0.65, fw);
-      float idx = floor(level + 0.5);
-      float major = step(mod(idx, 5.0), 0.5);
-      float a = line * mix(0.10, 0.26, major);
-      float hot = clamp(abs(heat) * 5.0, 0.0, 1.0);
-      vec3 col = mix(${V3(CREAM)}, ${V3(ORANGE)}, hot);
+      float line = 1.0 - clamp(dist / (fw * uLinePx), 0.0, 1.0);
+      line *= 1.0 - smoothstep(0.35, 0.65, fw / uS * 0.75);     // no mush where the slope is steep
+      float major = step(mod(floor(level + 0.5), 5.0), 0.5);
+      float a = line * mix(uTone.x, uTone.y, major);
+
+      float travel = mod(uT * 0.32, 3.2) - 0.6;                 // an orange wavefront crosses the lines now and then
+      float across = ps.x * 0.9 + ps.y * 0.35 - travel;
+      float sweep = uPulse * exp(-across * across * 38.0);
+      float hot = clamp(abs(heat) * 5.0 + sweep, 0.0, 1.0);
+      vec3 col = mix(uInk, uAcc, hot);
       a = clamp(a + line * hot * 0.5, 0.0, 1.0);
       gl_FragColor = vec4(col * a, a);
     }
   `;
-  const ContoursFX = field({
-    frag: CONTOUR_FS, deriv: true, rip: 6,
-    scale: (l, q) => (l ? 0.5 : 0.75) * q,
-    move: { min: 0.1, gap: 0.18, strength: () => 0.5, life: 4 },
-    click: { strength: 1.6, life: 4.5 }
-  });
-
-  /* ---- PROJECTS: Voronoi cells (cream background) ---------------------- */
-  const CELLS_FS = () => `
-    ${FRAG_PRECISION}
-    uniform vec2 uRes;
-    uniform float uT;
-    uniform vec3 uPtr;
-    uniform vec4 uRip[6];
-    uniform float uScroll;
-    ${GLSL_OVER}
-    vec2 hash2(vec2 p) {
-      p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-      return fract(sin(p) * 43758.5453);
-    }
-    vec2 site(vec2 g, vec2 o) {                                // a cell's drifting site, relative to its grid square
-      vec2 h = hash2(g + o);
-      return o + 0.5 + 0.4 * sin(uT * 0.22 + 6.2831 * h);
-    }
-    void main() {
-      vec2 p = gl_FragCoord.xy / uRes.y;
-      vec2 wp = p + vec2(0.0, uScroll);                       // slow parallax with the page scroll
-      const float SC = 6.5;                                   // cells per screen height
-      vec2 q = wp * SC;
-      vec2 g = floor(q), f = fract(q);
-
-      // pass 1: nearest site
-      float md = 9.0;
-      vec2 mr = vec2(0.0), mg = vec2(0.0);
-      for (int j = -1; j <= 1; j++) {
-        for (int i = -1; i <= 1; i++) {
-          vec2 o = vec2(float(i), float(j));
-          vec2 r = site(g, o) - f;
-          float d = dot(r, r);
-          if (d < md) { md = d; mr = r; mg = o; }
-        }
-      }
-      // pass 2: exact distance to the nearest cell border (constant-width lines)
-      float bd = 9.0;
-      for (int j = -2; j <= 2; j++) {
-        for (int i = -2; i <= 2; i++) {
-          vec2 o = mg + vec2(float(i), float(j));
-          vec2 r = site(g, o) - f;
-          vec2 dv = r - mr;
-          if (dot(dv, dv) > 1e-5) bd = min(bd, dot(0.5 * (mr + r), normalize(dv)));
-        }
-      }
-      vec2 c1 = g + mg, r1 = mr;
-      float px = SC / uRes.y;                                 // one pixel, in cell units
-      float line = 1.0 - smoothstep(0.016, 0.016 + px * 2.0, bd);
-
-      vec2 cs = (c1 + 0.5) / SC - vec2(0.0, uScroll);         // this cell's centre, in screen space
-      float hd = distance(cs, uPtr.xy);
-      float glow = uPtr.z * exp(-hd * hd * 14.0);
-      for (int i = 0; i < 6; i++) {
-        vec4 r = uRip[i];
-        float age = uT - r.z;
-        if (r.w > 0.0 && age >= 0.0) {
-          float d = distance(cs, r.xy) - age * 0.55;
-          glow += r.w * exp(-age * 1.0) * exp(-d * d * 150.0);
-        }
-      }
-      glow = clamp(glow, 0.0, 1.0);
-
-      float tone = hash2(c1).x;
-      vec4 L = vec4(0.0);
-      over(L, ${V3(BLACK)}, 0.026 * step(0.62, tone));        // a few cells sit slightly darker
-      over(L, ${V3(ORANGE)}, glow * 0.26);
-      over(L, mix(${V3(BLACK)}, ${V3(ORANGE)}, clamp(glow * 1.6, 0.0, 1.0)), line * (0.14 + glow * 0.6));
-      vec2 ar = abs(r1);                                      // square "node" at each cell's site
-      float node = 1.0 - smoothstep(0.034, 0.034 + px * 2.0, max(ar.x, ar.y));
-      over(L, mix(${V3(BLACK)}, ${V3(ORANGE)}, clamp(glow * 1.6, 0.0, 1.0)), node * (0.34 + glow * 0.5));
-      gl_FragColor = L;
-    }
-  `;
-  const CellsFX = field({
-    frag: CELLS_FS, rip: 6, scroll: 0.3,
-    scale: (l, q) => (l ? 0.4 : 0.5) * q,
-    move: { min: 0.09, gap: 0.16, strength: () => 0.45, life: 3.5 },
-    click: { strength: 1.3, life: 4 }
-  });
-
-  /* ---- EXPERIENCE: halftone dot wave (cream background) ---------------- */
-  const HALFTONE_FS = () => `
-    ${FRAG_PRECISION}
-    uniform vec2 uRes;
-    uniform float uT;
-    uniform vec3 uPtr;
-    uniform vec4 uRip[6];
-    uniform float uScroll;
-    uniform float uCellPx;
-    mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
-    void main() {
-      vec2 frag = gl_FragCoord.xy;
-      vec2 wf = frag + vec2(0.0, uScroll * uRes.y);           // world pixels (scrolls slower than the page)
-      vec2 q = rot(0.26) * wf;                                // classic halftone screen angle
-      vec2 cell = floor(q / uCellPx + 0.5);
-      vec2 cq = cell * uCellPx;
-      vec2 local = q - cq;
-      vec2 cw = rot(-0.26) * cq;                              // dot centre back in world pixels
-      vec2 u = cw / uRes.y;
-      vec2 cs = (cw - vec2(0.0, uScroll * uRes.y)) / uRes.y;  // dot centre in screen height units
-
-      float wave = 0.5 + 0.5 * sin(u.x * 5.0 + uT * 0.45 + sin(u.y * 4.0 - uT * 0.3) * 1.6);
-      vec2 uv = frag / uRes;
-      float grad = smoothstep(0.0, 1.0, uv.x * 0.55 + (1.0 - uv.y) * 0.45);
-      float dens = mix(wave, grad, 0.45);
-
-      float hd = distance(cs, uPtr.xy);
-      float boost = uPtr.z * exp(-hd * hd * 16.0);
-      for (int i = 0; i < 6; i++) {
-        vec4 r = uRip[i];
-        float age = uT - r.z;
-        if (r.w > 0.0 && age >= 0.0) {
-          float d = distance(cs, r.xy) - age * 0.5;
-          boost += r.w * exp(-age * 1.1) * exp(-d * d * 120.0);
-        }
-      }
-      boost = clamp(boost, 0.0, 1.0);
-
-      float rr = min(uCellPx * (0.10 + 0.34 * dens + 0.30 * boost), uCellPx * 0.62);
-      float a = 1.0 - smoothstep(rr - 0.8, rr + 0.8, length(local));
-      a *= mix(0.17, 0.85, clamp(boost * 1.3, 0.0, 1.0));
-      vec3 col = mix(${V3(BLACK)}, ${V3(ORANGE)}, clamp(boost * 1.7, 0.0, 1.0));
-      gl_FragColor = vec4(col * a, a);
-    }
-  `;
-  const HalftoneFX = field({
-    frag: HALFTONE_FS, rip: 6, scroll: 0.3, uniforms: ["uCellPx"],
-    scale: (l, q) => (l ? 0.6 : 0.75) * q,
-    move: { min: 0.09, gap: 0.14, strength: () => 0.4, life: 3.5 },
-    click: { strength: 1.2, life: 4 },
-    extra: (gl, U, fx) => gl.uniform1f(U.uCellPx, (lite() ? 12 : 15) * fx.s)
-  });
-
-  /* ---- EDUCATION: ordered-dither edges (black background) -------------- */
-  const DITHER_FS = () => `
-    ${FRAG_PRECISION}
-    uniform vec2 uRes;
-    uniform float uT;
-    uniform vec3 uPtr;
-    uniform vec4 uRip[8];
-    uniform float uScroll;
-    uniform float uCell;
-    uniform float uBand;
-    ${GLSL_NOISE}
-    ${GLSL_BAYER}
-    void main() {
-      vec2 frag = gl_FragCoord.xy;
-      vec2 p = frag / uRes.y;
-      float topPx = (uRes.y - frag.y) * uCell;                // css px from the top / bottom edge
-      float botPx = frag.y * uCell;
-      float tt = 1.0 - clamp(topPx / uBand, 0.0, 1.0);
-      float bt = 1.0 - clamp(botPx / (uBand * 0.9), 0.0, 1.0);
-      float n = fbm(vec2(p.x * 9.0 + uT * 0.05, p.y * 3.0 - uT * 0.02));   // ragged, drifting edge
-
-      float vTop = pow(tt, 1.5) * (0.65 + 0.7 * n) * 1.42;    // cream -> orange -> navy -> black
-      float vBot = pow(bt, 1.3) * (0.55 + 0.5 * n) * 0.95;    // navy bleeding up from the footer
-      float edge = max(tt, bt);
-      float v = max(vTop, vBot);
-
-      vec2 q = p - uPtr.xy;
-      float heat = uPtr.z * 0.9 * exp(-dot(q, q) * 70.0);
-      for (int i = 0; i < 8; i++) {
-        vec4 r = uRip[i];
-        float age = uT - r.z;
-        if (r.w > 0.0 && age >= 0.0) {
-          float d = distance(p, r.xy) - age * 0.5;
-          heat += r.w * exp(-age * 1.15) * exp(-d * d * 700.0);
-        }
-      }
-      v += heat * mix(0.1, 1.0, edge);                        // keep the text zone calm
-
-      float lvl = floor(v * 2.0 + bayer8(frag));
-      vec3 col = vec3(0.0);
-      float a = 0.0;
-      if (lvl >= 3.0) { col = ${V3(CREAM)}; a = 1.0; }
-      else if (lvl >= 2.0) { col = ${V3(ORANGE)}; a = 1.0; }
-      else if (lvl >= 1.0) { col = ${V3(NAVY)}; a = 1.0; }
-      gl_FragColor = vec4(col * a, a);
-    }
-  `;
-  const DitherEdgesFX = field({
-    frag: DITHER_FS, rip: 8, uniforms: ["uCell", "uBand"],
-    scale: () => 1 / (lite() ? 8 : 6),                         // one canvas pixel = one dither cell
-    move: { min: 0.06, gap: 0.1, strength: (m) => 0.22 + Math.min(0.25, m * 1.2), life: 3 },
-    click: { strength: 1.1, life: 4.5 },
-    extra: (gl, U, fx) => { gl.uniform1f(U.uCell, fx.cssH / fx.h); gl.uniform1f(U.uBand, lite() ? 64 : 96); }
-  });
 
   /* ---- CONTACT: sunburst rays (navy background) ------------------------ */
   const RAYS_FS = () => `
@@ -931,76 +744,41 @@
       gl_FragColor = vec4(col * a, a);
     }
   `;
-  const RaysFX = field({
-    frag: RAYS_FS, rip: 6, scroll: 0.35,
-    scale: (l, q) => (l ? 0.35 : 0.5) * q,
-    move: null,
-    click: { strength: 1.2, life: 4 }
-  });
+
+  // Line tint per background: cream lines on navy/black, black lines on cream.
+  const ON_NAVY = { ink: CREAM, minor: 0.10, major: 0.26 };
+  const ON_BLACK = { ink: CREAM, minor: 0.11, major: 0.27 };
+  const ON_CREAM = { ink: BLACK, minor: 0.10, major: 0.26 };
+  const contours = (tone, o) => {
+    const cfg = Object.assign({ frag: CONTOUR_FS, seed: [0, 0], freq: 1, pulse: 0, scroll: 0 }, tone, o);
+    return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
+  };
+
+  // Contact: the sunburst. It is a very smooth image, so it renders a little lighter than the contours.
+  const rays = (() => {
+    const cfg = { frag: RAYS_FS, ink: CREAM, minor: 0, major: 0, seed: [0, 0], freq: 1, pulse: 0, scroll: 0.35, trail: false, click: 1.2, scale: (l, q) => (l ? 0.4 : 0.75) * q };
+    return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
+  })();
 
   /* ======================================================================
-     Wiring + compare panel
+     Wiring: which canvas gets which effect
      ====================================================================== */
+  const FIELD = { maxPixels: 2.0e6 };
   const SLOTS = [
-    { key: "hero",       label: "Hero",       id: "fx-hero-mono",  Effect: MonogramFX,    on: "monogram", name: "Monogram", opts: { antialias: true } },
-    { key: "skills",     label: "Skills",     id: "fx-skills",     Effect: ContoursFX,    on: "contours", name: "Contours" },
-    { key: "projects",   label: "Projects",   id: "fx-projects",   Effect: CellsFX,       on: "cells",    name: "Cells" },
-    { key: "experience", label: "Experience", id: "fx-experience", Effect: HalftoneFX,    on: "halftone", name: "Halftone" },
-    { key: "education",  label: "Education",  id: "fx-education",  Effect: DitherEdgesFX, on: "dither",   name: "Dither" },
-    { key: "contact",    label: "Contact",    id: "fx-contact",    Effect: RaysFX,        on: "rays",     name: "Rays" }
+    { id: "fx-hero-mono",  Effect: MonogramFX,                                                          opts: { antialias: true } },
+    { id: "fx-skills",     Effect: contours(ON_NAVY),                                                   opts: FIELD },
+    { id: "fx-projects",   Effect: contours(ON_CREAM, { seed: [11, 5], pulse: 1, scroll: 0.3 }),        opts: FIELD },
+    { id: "fx-experience", Effect: contours(ON_CREAM, { seed: [31, 17], freq: 1.25, pulse: 1, scroll: 0.3 }), opts: FIELD },
+    { id: "fx-education",  Effect: contours(ON_BLACK, { seed: [53, 2], pulse: 1 }),                     opts: FIELD },
+    { id: "fx-contact",    Effect: rays,                                                        opts: FIELD }
   ];
-  const STORE = "portfolio-fx-v2";
-  const choice = Object.assign({}, DEFAULTS);
-  try { Object.assign(choice, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch (e) { /* ignore */ }
-  const qs = new URLSearchParams(location.search);
-  SLOTS.forEach((sl) => { if (qs.get(sl.key)) choice[sl.key] = qs.get(sl.key); });
-
-  SLOTS.forEach((sl) => {
-    const cv = document.getElementById(sl.id);
-    sl.stage = cv ? new Stage(cv, sl.Effect, sl.opts) : null;
-  });
-
-  function apply() {
-    SLOTS.forEach((sl) => sl.stage && sl.stage.setOn(choice[sl.key] === sl.on));
-    document.querySelectorAll(".fx-panel button[data-group]").forEach((b) => {
-      b.setAttribute("aria-pressed", String(choice[b.dataset.group] === b.dataset.value));
-    });
-    try { localStorage.setItem(STORE, JSON.stringify(choice)); } catch (e) { /* ignore */ }
-  }
-
-  function buildPanel() {
-    const panel = document.createElement("div");
-    panel.className = "fx-panel";
-    panel.setAttribute("role", "group");
-    panel.setAttribute("aria-label", "WebGL effect toggles");
-    panel.innerHTML = `<div class="fx-head"><span>FX compare</span><button type="button" class="fx-min" aria-label="Collapse panel" aria-expanded="true">&minus;</button></div>
-      <div class="fx-body">
-        <div class="fx-row"><span class="fx-label">All</span><button type="button" data-all="on">On</button><button type="button" data-all="off">Off</button></div>
-        ${SLOTS.map((sl) => `<div class="fx-row"><span class="fx-label">${sl.label}</span>
-          <button type="button" data-group="${sl.key}" data-value="${sl.on}" aria-pressed="false">${sl.name}</button>
-          <button type="button" data-group="${sl.key}" data-value="off" aria-pressed="false">Off</button></div>`).join("")}
-      </div>`;
-    panel.addEventListener("click", (e) => {
-      const b = e.target.closest("button");
-      if (!b) return;
-      if (b.classList.contains("fx-min")) {
-        const open = b.getAttribute("aria-expanded") === "true";
-        b.setAttribute("aria-expanded", String(!open));
-        b.innerHTML = open ? "+" : "&minus;";
-        panel.classList.toggle("is-collapsed", open);
-        return;
-      }
-      if (b.dataset.all) { SLOTS.forEach((sl) => { choice[sl.key] = b.dataset.all === "on" ? sl.on : "off"; }); apply(); return; }
-      choice[b.dataset.group] = b.dataset.value;
-      apply();
-    });
-    document.body.appendChild(panel);
-  }
 
   // Start after load + idle so the effects never compete with first paint.
   const start = () => {
-    if (COMPARE_PANEL) buildPanel();
-    apply();
+    SLOTS.forEach((sl) => {
+      const cv = document.getElementById(sl.id);
+      if (cv) new Stage(cv, sl.Effect, sl.opts).setOn(true);
+    });
     liteMQ.addEventListener && liteMQ.addEventListener("change", () => stages.forEach((s) => s.resize()));
     reduce.addEventListener && reduce.addEventListener("change", () => stages.forEach((s) => s.sync()));
     document.addEventListener("visibilitychange", () => stages.forEach((s) => s.sync()));
