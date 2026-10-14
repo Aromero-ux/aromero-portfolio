@@ -297,7 +297,8 @@ footer[id] {
 }
 
 .fx-sticky--footer {
-    margin-top: -6rem;        /* cancels the footer's py-24 so the canvas starts at its top edge */
+    margin-top: -6rem;                    /* starts at the footer's top edge, cancelling its py-24 ... */
+    margin-bottom: calc(6rem - 100vh);    /* ... and gives that space back so the content does not move */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -316,11 +317,13 @@ footer[id] {
     --card-w: min(46rem, calc(100vw - 3rem));
     --card-h: 34rem;      /* measured from the tallest card by the script */
     --r: 40rem;           /* wheel radius, set by the script */
+    --side: 32rem;        /* where the neighbouring cards sit on screen (the arrows go there) */
     --turn: 0;            /* wheel rotation in degrees, set by the script */
     --roulette-interval: 5600ms;
 }
 
 .roulette:not(.is-ready) .roulette-pointer,
+.roulette:not(.is-ready) .roulette-btn,
 .roulette:not(.is-ready) .roulette-controls {
     display: none;
 }
@@ -418,83 +421,87 @@ footer[id] {
     100% { transform: rotate(0); }
 }
 
-.roulette-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-top: 2.5rem;
-}
-
-.roulette-btn,
-.roulette-dot {
+/* The arrows sit on top of the two side cards. */
+.roulette-btn {
+    position: absolute;
+    z-index: 6;
+    top: calc(2.25rem + var(--card-h) / 2 - 2rem);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 3rem;
-    height: 3rem;
-    padding: 0 0.75rem;
+    width: 4rem;
+    height: 4rem;
+    padding: 0;
     background: #000000;
     color: #EAECF0;
     border: 4px solid #000000;
-    box-shadow: 4px 4px 0 #FE7F2D;
-    font-weight: 900;
-    font-size: 1rem;
-    letter-spacing: 0.1em;
+    box-shadow: 5px 5px 0 #FE7F2D;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
-.roulette-btn:hover,
-.roulette-dot:hover {
+.roulette-btn--prev {
+    left: calc(50% - min(var(--side), 50vw - 3rem) - 2rem);
+}
+
+.roulette-btn--next {
+    left: calc(50% + min(var(--side), 50vw - 3rem) - 2rem);
+}
+
+.roulette-btn svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    fill: currentColor;
+}
+
+.roulette-btn:hover {
     background: #FE7F2D;
     color: #000000;
     transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 #000000;
+    box-shadow: 7px 7px 0 #000000;
 }
 
-.roulette-btn:active,
-.roulette-dot:active {
-    transform: translate(2px, 2px);
+.roulette-btn:active {
+    transform: translate(3px, 3px);
     box-shadow: 1px 1px 0 #000000;
 }
 
 .roulette-btn:focus-visible,
-.roulette-dot:focus-visible {
+.roulette-pause:focus-visible {
     outline: 3px solid #FE7F2D;
     outline-offset: 4px;
 }
 
-.roulette-btn svg {
-    width: 1rem;
-    height: 1rem;
-    fill: currentColor;
+/* On phones the neighbouring cards are off screen, so the arrows go under the card instead. */
+@media (max-width: 759px) {
+    .roulette.is-ready .roulette-stage {
+        height: calc(var(--card-h) + 3.5rem + 5.5rem);
+    }
+
+    .roulette-btn {
+        top: calc(2.25rem + var(--card-h) + 1.5rem);
+    }
+
+    .roulette-btn--prev {
+        left: 1.5rem;
+    }
+
+    .roulette-btn--next {
+        left: auto;
+        right: 1.5rem;
+    }
 }
 
-.roulette-dots {
-    display: flex;
-    gap: 0.75rem;
-    margin-left: 0.5rem;
-}
-
-.roulette-dot {
-    font-size: 0.75rem;
-    background: #EAECF0;
-    color: #000000;
-}
-
-.roulette-dot[aria-current="true"] {
-    background: #000000;
-    color: #EAECF0;
+.roulette-controls {
+    position: relative;
+    margin-top: 1.5rem;
 }
 
 /* Timer bar: fills while the next project is on its way. */
 .roulette-progress {
     position: relative;
-    flex-basis: 100%;
+    display: block;
     height: 6px;
-    margin-top: 0.75rem;
     background: rgba(0, 0, 0, 0.15);
     overflow: hidden;
 }
@@ -515,6 +522,33 @@ footer[id] {
     to { transform: scaleX(1); }
 }
 
+/* Pause control: invisible until a keyboard user tabs onto it. */
+.roulette-pause {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.roulette-pause:focus-visible {
+    position: static;
+    width: auto;
+    height: auto;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.9rem;
+    clip-path: none;
+    overflow: visible;
+    background: #000000;
+    color: #EAECF0;
+    border: 3px solid #000000;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .roulette.is-ready .roulette-ring,
     .roulette.is-ready .roulette-card::after {
@@ -530,4 +564,126 @@ footer[id] {
     .roulette.is-ready .roulette-card {
         padding: 1.25rem;     /* the cards are narrow on phones, so give the text more room */
     }
+}
+
+/* --------------------------------------------------------------------------
+   Easter egg: a black bolt on the hero's black background opens the effects lab
+   -------------------------------------------------------------------------- */
+.fx-bolt {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 1.1rem;
+    z-index: 3;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #000000;
+    cursor: pointer;
+    transition: color 0.15s ease, filter 0.25s ease, transform 0.15s ease;
+}
+
+.fx-bolt.is-ready {
+    display: inline-flex;
+}
+
+.fx-bolt svg {
+    width: 1.6rem;
+    height: 1.6rem;
+    fill: currentColor;
+}
+
+.fx-bolt:hover,
+.fx-bolt:focus-visible,
+.fx-bolt.is-open {
+    color: #FFFFFF;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.55));
+}
+
+.fx-bolt:active {
+    transform: scale(0.86) rotate(-8deg);
+}
+
+.fx-bolt:focus-visible {
+    outline: 2px solid #FE7F2D;
+    outline-offset: 2px;
+}
+
+.fx-lab {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    z-index: 60;
+    max-width: calc(100vw - 24px);
+    padding: 12px 14px 14px;
+    background: #000000;
+    color: #EAECF0;
+    border: 3px solid #FE7F2D;
+    box-shadow: 6px 6px 0 #FE7F2D;
+    font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.fx-lab[hidden] {
+    display: none;
+}
+
+.fx-lab-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    color: #FE7F2D;
+}
+
+.fx-lab-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 9px;
+}
+
+.fx-lab-label {
+    min-width: 92px;
+    opacity: 0.6;
+}
+
+.fx-lab button {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: #EAECF0;
+    background: #000000;
+    border: 2px solid #EAECF0;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+
+.fx-lab button:hover,
+.fx-lab button:focus-visible {
+    border-color: #FE7F2D;
+}
+
+.fx-lab button[aria-pressed="true"] {
+    background: #FE7F2D;
+    border-color: #FE7F2D;
+    color: #000000;
+}
+
+.fx-lab .fx-lab-close {
+    padding: 0 7px;
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.fx-lab-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 2px solid rgba(234, 236, 240, 0.25);
 }

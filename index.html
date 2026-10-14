@@ -108,10 +108,14 @@
     <header class="relative overflow-hidden bg-[#000000] pt-16 pb-24 border-b-8 border-[#233D4D]">
         <!-- WebGL accent: the AR monogram as a 3D wireframe (see fx.js) -->
         <canvas id="fx-hero-mono" class="fx-canvas fx-mono" aria-hidden="true" hidden></canvas>
+        <!-- Easter egg: a black bolt on the black background. Hover it, click it. (Opens the effects lab, see fx.js) -->
+        <button type="button" class="fx-bolt" aria-label="Open the effects lab" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </button>
         <div class="relative z-10 max-w-5xl mx-auto px-6">
             <div class="max-w-3xl">
                 <div class="inline-flex items-center gap-2 px-3 py-1 bg-[#233D4D] border border-[#FE7F2D] text-[#EAECF0] text-xs font-bold uppercase tracking-widest mb-6 sharp-edge">
-                    <span class="w-2 h-2 bg-[#FE7F2D] animate-pulse"></span> Software Engineer
+                    Software Engineer
                 </div>
                 <h1 class="text-5xl sm:text-7xl font-black text-[#EAECF0] tracking-tight mb-2 uppercase leading-none">
                     Alessandro<br><span class="text-[#FE7F2D]">Romero</span>
@@ -253,6 +257,12 @@
         <div class="roulette" data-roulette role="region" aria-roledescription="carousel" aria-label="Featured projects">
             <div class="roulette-stage">
                 <span class="roulette-pointer" aria-hidden="true"></span>
+                <button type="button" class="roulette-btn roulette-btn--prev" data-roulette-prev aria-label="Previous project">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H8.8l4.6-4.6L12 5l-7 7 7 7 1.4-1.4L8.8 13H20z"/></svg>
+                </button>
+                <button type="button" class="roulette-btn roulette-btn--next" data-roulette-next aria-label="Next project">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h11.2l-4.6-4.6L12 5l7 7-7 7-1.4-1.4 4.6-4.6H4z"/></svg>
+                </button>
                 <div class="roulette-ring grid md:grid-cols-2 gap-8">
             <article class="roulette-card bg-[#EAECF0] border-4 border-[#000000] p-8 flex flex-col justify-between hover:border-[#FCB841] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <div>
@@ -368,10 +378,8 @@
                 </div>
             </div>
             <div class="roulette-controls">
-                <button type="button" class="roulette-btn" data-roulette-prev aria-label="Previous project">&larr;</button>
-                <button type="button" class="roulette-btn" data-roulette-toggle aria-pressed="false" aria-label="Pause automatic rotation"></button>
-                <button type="button" class="roulette-btn" data-roulette-next aria-label="Next project">&rarr;</button>
-                <div class="roulette-dots" role="group" aria-label="Choose a project"></div>
+                <!-- Only shows up when focused with the keyboard (it is the pause control for keyboard and screen reader users) -->
+                <button type="button" class="roulette-pause" data-roulette-toggle aria-pressed="false" aria-label="Pause automatic rotation"></button>
                 <span class="roulette-progress" aria-hidden="true"><span></span></span>
             </div>
         </div>
@@ -445,10 +453,11 @@
     </div>
 
     <!-- Education & Leadership -->
-    <section id="education" class="relative overflow-hidden py-20 bg-[#000000] text-[#EAECF0]">
-        <!-- WebGL accent: contour lines -->
-        <canvas id="fx-education" class="fx-canvas fx-fill" aria-hidden="true" hidden></canvas>
-        <div class="relative z-10 max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-16">
+    <div class="fx-wrap bg-[#000000] text-[#EAECF0]">
+    <!-- WebGL accent: contour lines -->
+    <canvas id="fx-education" class="fx-canvas fx-sticky" aria-hidden="true" hidden></canvas>
+    <section id="education" class="relative z-10 py-20">
+        <div class="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-16">
             
             <div>
                 <h3 class="text-2xl font-black text-[#FE7F2D] uppercase tracking-widest mb-8">Education</h3>
@@ -487,6 +496,7 @@
 
         </div>
     </section>
+    </div>
 
     <!-- Contact Form & Footer -->
     <footer id="contact" class="fx-wrap bg-[#233D4D] py-24 border-t-8 border-[#FE7F2D]">

@@ -2,9 +2,10 @@
    FEATURED PROJECTS ROULETTE
    Turns the project cards into a 3D wheel that rotates by itself.
 
+   - the arrows sit on the side cards; arrow keys and swiping work too
    - pauses while you hover or keyboard-focus it, when it is off screen and
-     when the tab is hidden; there is also a pause button
-   - arrows, numbered tabs, left/right keys and swiping all work
+     when the tab is hidden (keyboard and screen reader users also get a pause
+     button, which only appears when it is focused)
    - with prefers-reduced-motion it never rotates on its own
    - only the card at the front can be reached by keyboard or screen reader
    ========================================================================== */
@@ -21,6 +22,7 @@
 
   const INTERVAL = 5600;                   // ms on each project (keep in sync with --roulette-interval)
   const MIN_SLOTS = 6;                     // a wheel needs enough cards for the neighbours to show
+  const PERSPECTIVE = 1900;                // keep in sync with the stage's perspective in styles.css
   const slots = n * Math.ceil(MIN_SLOTS / n);
   const step = 360 / slots;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
@@ -38,19 +40,7 @@
   const prev = root.querySelector("[data-roulette-prev]");
   const next = root.querySelector("[data-roulette-next]");
   const toggle = root.querySelector("[data-roulette-toggle]");
-  const dotsBox = root.querySelector(".roulette-dots");
   const pointer = root.querySelector(".roulette-pointer");
-
-  const dots = titles.map((title, j) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "roulette-dot";
-    b.textContent = String(j + 1).padStart(2, "0");
-    b.setAttribute("aria-label", `Show project ${j + 1}: ${title}`);
-    b.addEventListener("click", () => goTo(j));
-    dotsBox.appendChild(b);
-    return b;
-  });
 
   let active = 0;                          // keeps counting up, so the wheel always turns the same way
   let timer = 0;
@@ -72,7 +62,6 @@
       el.setAttribute("aria-roledescription", "slide");
       el.setAttribute("aria-label", `${(i % n) + 1} of ${n}: ${titles[i % n]}`);
     });
-    dots.forEach((b, j) => b.setAttribute("aria-current", String(j === f % n)));
   }
 
   function tick() {
@@ -101,28 +90,25 @@
     schedule();
   }
 
-  function goTo(j) {
-    let d = (j - (front() % n) + n) % n;
-    if (d > n / 2) d -= n;
-    if (d) go(d);
-  }
-
   function setToggleLabel() {
     toggle.setAttribute("aria-pressed", String(userPaused));
+    toggle.textContent = userPaused ? "Resume rotation" : "Pause rotation";
     toggle.setAttribute("aria-label", userPaused ? "Resume automatic rotation" : "Pause automatic rotation");
-    toggle.innerHTML = userPaused
-      ? '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13L14 8z"/></svg>'
-      : '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5h3.5v13H3zM9.5 1.5H13v13H9.5z"/></svg>';
   }
 
-  // Measure the cards: the wheel radius from the card width, the card height from the tallest one.
+  // Measure the cards: the wheel radius from the card width, the card height from the tallest one,
+  // and where the neighbouring cards land on screen (that is where the arrows go).
   function measure() {
     root.classList.add("is-measuring");
     const h = Math.max.apply(null, originals.map((el) => el.offsetHeight));
     root.classList.remove("is-measuring");
     const w = originals[0].offsetWidth;
+    const r = (w / 2 / Math.tan(Math.PI / slots)) * 1.12;                 // a little gap between cards
+    const a = (step * Math.PI) / 180;
+    const side = (r * Math.sin(a) * PERSPECTIVE) / (PERSPECTIVE + r * (1 - Math.cos(a)));
     root.style.setProperty("--card-h", `${h}px`);
-    root.style.setProperty("--r", `${(w / 2 / Math.tan(Math.PI / slots)) * 1.12}px`);   // a little gap between cards
+    root.style.setProperty("--r", `${r}px`);
+    root.style.setProperty("--side", `${side}px`);
   }
 
   // ---- controls
@@ -139,7 +125,7 @@
   root.addEventListener("focusout", () => { focused = false; schedule(); });
 
   let startX = null;                       // swipe
-  stage.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse" || e.button === 0) startX = e.clientX; });
+  stage.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; if (e.pointerType !== "mouse" || e.button === 0) startX = e.clientX; });
   stage.addEventListener("pointerup", (e) => {
     if (startX === null) return;
     const dx = e.clientX - startX;

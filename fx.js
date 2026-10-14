@@ -7,7 +7,10 @@
                 the cursor, ripple on click, and flow as you scroll
    CONTACT      a slow sunburst whose rays point at the cursor
 
-   To drop an effect from a section, delete that section's <canvas> in index.html.
+   A lightning bolt hidden in the hero (black on black, it lights up when you hover
+   it) opens the Effects Lab, where every section's effect can be switched or turned
+   off. Delete that <button class="fx-bolt"> in index.html to remove the lab, or a
+   section's <canvas> to remove its effect.
 
    Performance rules:
    - starts only after the page has loaded and the browser is idle
@@ -113,14 +116,24 @@
     return o;
   };
 
-  /* Shared GLSL: value noise + fbm */
+  /* Shared GLSL: value noise + fbm.
+     The lattice index is wrapped (period 61) and the hash only ever sees small
+     numbers, so it stays exact on every GPU however far the terrain has drifted
+     or been offset (large inputs make a naive hash turn into blocky scratches). */
   const GLSL_NOISE = `
-    float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
-    float vnoise(vec2 p){
-      vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
-      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+    float hash(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
     }
-    float fbm(vec2 p){
+    float vnoise(vec2 p) {
+      vec2 f = fract(p);
+      vec2 i0 = mod(floor(p), 61.0);
+      vec2 i1 = mod(i0 + 1.0, 61.0);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i0), hash(vec2(i1.x, i0.y)), f.x), mix(hash(vec2(i0.x, i1.y)), hash(i1), f.x), f.y);
+    }
+    float fbm(vec2 p) {
       float a = 0.5, s = 0.0;
       for (int i = 0; i < 4; i++) { s += a * vnoise(p); p = p * 2.03 + vec2(17.1, 9.2); a *= 0.5; }
       return s;
@@ -200,6 +213,18 @@
       if (reduce.matches) { this.stop(); this.renderStill(); return; }
       if (!this.raf) { this.lastRender = performance.now(); this.raf = requestAnimationFrame(this.tick); }
     }
+    // Swap which effect this canvas runs (same GL context, fresh shaders).
+    setEffect(Effect) {
+      if (Effect === this.Effect) return;
+      this.stop();
+      if (this.fx && this.fx.dispose) this.fx.dispose();
+      this.fx = null;
+      this.Effect = Effect;
+      this.sized = false; this.live = false;
+      this.canvas.classList.remove("is-live");
+      this.sync();
+    }
+
     stop() { if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; }
 
     resize() {
@@ -578,6 +603,7 @@
       gl.disable(gl.BLEND);
       gl.disable(gl.DEPTH_TEST);
     }
+    dispose() { this.gl.deleteProgram(this.prog); this.gl.deleteBuffer(this.buf); }
     // crisp on high-DPI screens (the stage also enforces a pixel budget)
     pixelScale(q) {
       if (this.cfg.scale) return this.cfg.scale(lite(), q);
@@ -705,6 +731,7 @@
     uniform vec3 uPtr;
     uniform vec4 uRip[6];
     uniform float uScroll;
+    uniform vec3 uInk;
     void main() {
       float asp = uRes.x / uRes.y;
       vec2 c = vec2(0.5 * asp, 0.5);
@@ -739,7 +766,7 @@
       pulse = clamp(pulse, 0.0, 1.5);
 
       float a = s * fade * (mix(0.045, 0.10, orangeRay) + spot * 0.3 + pulse * 0.2) + pulse * 0.16 * fade;
-      vec3 col = mix(${V3(CREAM)}, ${V3(ORANGE)}, clamp(orangeRay + spot * 1.2 + pulse, 0.0, 1.0));
+      vec3 col = mix(uInk, ${V3(ORANGE)}, clamp(orangeRay + spot * 1.2 + pulse, 0.0, 1.0));
       a = clamp(a, 0.0, 1.0);
       gl_FragColor = vec4(col * a, a);
     }
@@ -749,36 +776,98 @@
   const ON_NAVY = { ink: CREAM, minor: 0.10, major: 0.26 };
   const ON_BLACK = { ink: CREAM, minor: 0.11, major: 0.27 };
   const ON_CREAM = { ink: BLACK, minor: 0.10, major: 0.26 };
+
   const contours = (tone, o) => {
     const cfg = Object.assign({ frag: CONTOUR_FS, seed: [0, 0], freq: 1, pulse: 0, scroll: 0 }, tone, o);
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
   };
-
-  // Contact: the sunburst. It is a very smooth image, so it renders a little lighter than the contours.
-  const rays = (() => {
-    const cfg = { frag: RAYS_FS, ink: CREAM, minor: 0, major: 0, seed: [0, 0], freq: 1, pulse: 0, scroll: 0.35, trail: false, click: 1.2, scale: (l, q) => (l ? 0.4 : 0.75) * q };
+  // The sunburst is a very smooth image, so it renders a little lighter than the contours.
+  const rays = (tone, o) => {
+    const cfg = Object.assign({ frag: RAYS_FS, seed: [0, 0], freq: 1, pulse: 0, trail: false, click: 1.2, scale: (l, q) => (l ? 0.4 : 0.75) * q }, tone, o);
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
-  })();
+  };
+  const fieldEffects = (tone, o) => ({ contours: contours(tone, o), rays: rays(tone, o) });
 
   /* ======================================================================
-     Wiring: which canvas gets which effect
+     Wiring: which canvas gets which effect. Each section can run any of its
+     effects (or none); the Effects Lab (the hidden bolt) switches between them.
      ====================================================================== */
   const FIELD = { maxPixels: 2.0e6 };
   const SLOTS = [
-    { id: "fx-hero-mono",  Effect: MonogramFX,                                                          opts: { antialias: true } },
-    { id: "fx-skills",     Effect: contours(ON_NAVY),                                                   opts: FIELD },
-    { id: "fx-projects",   Effect: contours(ON_CREAM, { seed: [11, 5], pulse: 1, scroll: 0.3 }),        opts: FIELD },
-    { id: "fx-experience", Effect: contours(ON_CREAM, { seed: [31, 17], freq: 1.25, pulse: 1, scroll: 0.3 }), opts: FIELD },
-    { id: "fx-education",  Effect: contours(ON_BLACK, { seed: [53, 2], pulse: 1 }),                     opts: FIELD },
-    { id: "fx-contact",    Effect: rays,                                                        opts: FIELD }
+    { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
+    { key: "skills",     label: "Skills",     id: "fx-skills",     initial: "contours", opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [0, 0] }) },
+    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, { seed: [4, 2], pulse: 1, scroll: 0.3 }) },
+    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, { seed: [9, 6], freq: 1.25, pulse: 1, scroll: 0.3 }) },
+    { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: fieldEffects(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
+    { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) }
   ];
+  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays" };
+
+  // choices survive a reload; anything unknown falls back to the default
+  const STORE = "portfolio-fx-v3";
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { /* storage unavailable */ }
+  const choice = {};
+  SLOTS.forEach((sl) => { choice[sl.key] = saved[sl.key] === "off" || sl.effects[saved[sl.key]] ? saved[sl.key] : sl.initial; });
+
+  function apply() {
+    SLOTS.forEach((sl) => {
+      if (!sl.stage) return;
+      if (choice[sl.key] === "off") { sl.stage.setOn(false); return; }
+      sl.stage.setEffect(sl.effects[choice[sl.key]]);
+      sl.stage.setOn(true);
+    });
+    document.querySelectorAll(".fx-lab button[data-slot]").forEach((b) => {
+      b.setAttribute("aria-pressed", String(choice[b.dataset.slot] === b.dataset.value));
+    });
+    try { localStorage.setItem(STORE, JSON.stringify(choice)); } catch (e) { /* storage unavailable */ }
+  }
+
+  /* ---- The Effects Lab: a hidden lightning bolt in the hero opens it ---- */
+  function setupLab() {
+    const bolt = document.querySelector(".fx-bolt");
+    if (!bolt) return;
+    const panel = document.createElement("div");
+    panel.className = "fx-lab";
+    panel.id = "fx-lab";
+    panel.hidden = true;
+    panel.setAttribute("role", "group");
+    panel.setAttribute("aria-label", "Effects lab");
+    const rows = SLOTS.filter((sl) => sl.stage).map((sl) =>
+      `<div class="fx-lab-row"><span class="fx-lab-label">${sl.label}</span>${Object.keys(sl.effects).map((k) =>
+        `<button type="button" data-slot="${sl.key}" data-value="${k}" aria-pressed="false">${NAMES[k]}</button>`).join("")}<button type="button" data-slot="${sl.key}" data-value="off" aria-pressed="false">Off</button></div>`).join("");
+    panel.innerHTML = `<div class="fx-lab-head"><span>Effects lab</span><button type="button" class="fx-lab-close" aria-label="Close effects lab">&times;</button></div>${rows}
+      <div class="fx-lab-row fx-lab-foot"><button type="button" data-reset="default">Reset</button><button type="button" data-reset="off">All off</button></div>`;
+    document.body.appendChild(panel);
+    bolt.setAttribute("aria-controls", "fx-lab");
+    bolt.classList.add("is-ready");
+
+    const setOpen = (open) => {
+      panel.hidden = !open;
+      bolt.classList.toggle("is-open", open);
+      bolt.setAttribute("aria-expanded", String(open));
+      if (open) panel.querySelector("button").focus(); else if (panel.contains(document.activeElement)) bolt.focus();
+    };
+    bolt.addEventListener("click", () => setOpen(panel.hidden));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) setOpen(false); });
+    panel.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.classList.contains("fx-lab-close")) { setOpen(false); return; }
+      if (b.dataset.reset) { SLOTS.forEach((sl) => { choice[sl.key] = b.dataset.reset === "off" ? "off" : sl.initial; }); apply(); return; }
+      choice[b.dataset.slot] = b.dataset.value;
+      apply();
+    });
+  }
 
   // Start after load + idle so the effects never compete with first paint.
   const start = () => {
     SLOTS.forEach((sl) => {
       const cv = document.getElementById(sl.id);
-      if (cv) new Stage(cv, sl.Effect, sl.opts).setOn(true);
+      if (cv) sl.stage = new Stage(cv, sl.effects[choice[sl.key]] || sl.effects[sl.initial], sl.opts);
     });
+    setupLab();
+    apply();
     liteMQ.addEventListener && liteMQ.addEventListener("change", () => stages.forEach((s) => s.resize()));
     reduce.addEventListener && reduce.addEventListener("change", () => stages.forEach((s) => s.sync()));
     document.addEventListener("visibilitychange", () => stages.forEach((s) => s.sync()));
