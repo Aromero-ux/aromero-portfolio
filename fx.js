@@ -1,28 +1,5 @@
 /* ==========================================================================
-   WEBGL ACCENTS  (raw WebGL, no libraries)
-
-   HERO         the AR logo as a 3D wireframe (tilts to the cursor, click spins it)
-   SECTIONS     drifting topographic contour lines behind skills, projects,
-                experience and education, tinted per background: they bulge under
-                the cursor, ripple on click, and flow as you scroll
-   CONTACT      a slow sunburst whose rays point at the cursor
-
-   A lightning bolt hidden in the hero (black on black, it lights up when you hover
-   it) opens the Effects Lab, where every section's effect can be switched or turned
-   off. Delete that <button class="fx-bolt"> in index.html to remove the lab, or a
-   section's <canvas> to remove its effect.
-
-   Performance rules:
-   - starts only after the page has loaded and the browser is idle
-   - creates its GL context only when it first scrolls into view
-   - draws only while its canvas is on screen and the tab is visible
-   - the tall sections share ONE viewport-sized canvas each that stays put while
-     the content scrolls over it, so cost never grows with section height
-   - ~60fps while you interact or scroll, ~30fps (24fps on phones) when idle
-   - crisp on high-DPI screens, with a pixel budget and automatic step-down
-     if frames run long
-   - refuses to run on software rendering; the plain page stays as the fallback
-   - prefers-reduced-motion gets a single still frame
+   WEBGL ACCENTS & EFFECTS LAB
    ========================================================================== */
 (() => {
   "use strict";
@@ -30,13 +7,37 @@
   if (!("IntersectionObserver" in window) || !("ResizeObserver" in window)) return;
 
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
-  const liteMQ = matchMedia("(max-width: 767px)");      // phones: simplified version
+  const liteMQ = matchMedia("(max-width: 767px)");      
   const lite = () => liteMQ.matches;
-  const sideLayout = () => innerWidth >= 1100;           // room beside the hero text?
+  const sideLayout = () => innerWidth >= 1100;           
+
+  /* ---- Theme Audio ------------------------------------------------------- */
+  // Auto-plays royalty-free synthwave track when the theme is selected
+  const themeAudio = new Audio('assets/hackers.mp3');
+  themeAudio.loop = true;
+
+  // Restore audio playback position seamlessly across pages
+  const savedTime = sessionStorage.getItem('killerAudioTime');
+  if (savedTime) {
+    themeAudio.currentTime = parseFloat(savedTime);
+  }
+
+  // Save the exact timestamp before the user navigates to another page
+  addEventListener('beforeunload', () => {
+    if (document.documentElement.classList.contains('fx-killer') && !themeAudio.paused) {
+      sessionStorage.setItem('killerAudioTime', themeAudio.currentTime);
+    } else {
+      sessionStorage.removeItem('killerAudioTime');
+    }
+  });
 
   /* ---- Palette (matches the site) -------------------------------------- */
-  const ORANGE = [0.996, 0.498, 0.176];  // #FE7F2D
-  const CREAM = [0.918, 0.925, 0.941];   // #EAECF0
+  const ORANGE = [0.996, 0.498, 0.176];  
+  const CREAM = [0.918, 0.925, 0.941];   
+  
+  // Killer Frequency Palette
+  const KILLER_PINK = [1.0, 0.0, 0.498]; // #ff007f
+  const KILLER_CYAN = [0.0, 0.898, 1.0]; // #00e5ff
 
   /* ---- Pointer (shared) ------------------------------------------------- */
   const P = { x: 0, y: 0, seen: false, last: 0 };
@@ -81,7 +82,6 @@
     names.forEach((n) => { u[n] = gl.getUniformLocation(p, n === "uRip" ? "uRip[0]" : n); });
     return u;
   };
-  // One triangle that covers the whole canvas.
   function fullscreenTriangle(gl) {
     const b = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, b);
@@ -100,7 +100,7 @@
     };
   }
 
-  /* ---- Matrices (column-major, write into `o`) -------------------------- */
+  /* ---- Matrices -------------------------- */
   const mul = (o, a, b) => {
     for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
       o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
@@ -116,10 +116,7 @@
     return o;
   };
 
-  /* Shared GLSL: value noise + fbm.
-     The lattice index is wrapped (period 61) and the hash only ever sees small
-     numbers, so it stays exact on every GPU however far the terrain has drifted
-     or been offset (large inputs make a naive hash turn into blocky scratches). */
+  /* Shared GLSL */
   const GLSL_NOISE = `
     float hash(vec2 p) {
       vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -148,7 +145,7 @@
   `;
 
   /* ======================================================================
-     STAGE: owns one canvas + its GL context and decides when to draw
+     STAGE
      ====================================================================== */
   class Stage {
     constructor(canvas, Effect, opts) {
@@ -172,7 +169,7 @@
         const o = {
           alpha: true, antialias: !!this.opts.antialias, depth: false, premultipliedAlpha: true,
           powerPreference: "low-power",
-          failIfMajorPerformanceCaveat: true   // software rendering would be slower than no effect
+          failIfMajorPerformanceCaveat: true   
         };
         const gl = this.canvas.getContext("webgl", o) || this.canvas.getContext("experimental-webgl", o);
         if (!gl) throw new Error("WebGL unavailable");
@@ -192,7 +189,7 @@
       this.on = on;
       if (on) {
         if (this.failed) { this.on = false; return; }
-        this.canvas.hidden = false;             // GL itself starts lazily, once it is on screen
+        this.canvas.hidden = false;             
         this.ro.observe(this.canvas);
         this.sync();
       } else {
@@ -209,11 +206,10 @@
       if (!go) { this.stop(); return; }
       if (!this.init()) { this.on = false; return; }
       if (!this.sized) this.resize();
-      if (!this.sized) return;                  // not laid out yet; the ResizeObserver will call back
+      if (!this.sized) return;                  
       if (reduce.matches) { this.stop(); this.renderStill(); return; }
       if (!this.raf) { this.lastRender = performance.now(); this.raf = requestAnimationFrame(this.tick); }
     }
-    // Swap which effect this canvas runs (same GL context, fresh shaders).
     setEffect(Effect) {
       if (Effect === this.Effect) return;
       this.stop();
@@ -233,7 +229,7 @@
       const cssW = this.canvas.clientWidth, cssH = this.canvas.clientHeight;
       if (!cssW || !cssH) return;
       let s = this.fx.pixelScale(this.quality);
-      const budget = this.opts.maxPixels;                       // cap total pixels on very large screens
+      const budget = this.opts.maxPixels;                       
       if (budget && cssW * cssH * s * s > budget) s = Math.sqrt(budget / (cssW * cssH));
       const w = Math.max(2, Math.round(cssW * s)), h = Math.max(2, Math.round(cssH * s));
       if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
@@ -255,7 +251,7 @@
       this.raf = requestAnimationFrame(this.tick);
       if (!this.fx) return;
       const busy = this.fx.busy(now);
-      if (now - this.lastRender < (busy ? 14 : lite() ? 42 : 31)) return;   // ~60 / ~30 / ~24 fps
+      if (now - this.lastRender < (busy ? 14 : lite() ? 42 : 31)) return;   
       const dt = Math.min((now - this.lastRender) / 1000, 0.1);
       this.lastRender = now;
       this.t += dt;
@@ -265,7 +261,6 @@
       this.adapt(dt * 1000, busy);
     }
 
-    // If frames keep taking too long, quietly render fewer pixels.
     adapt(ms, busy) {
       if (!busy) { this.slow = 0; return; }
       this.ema = this.ema * 0.9 + ms * 0.1;
@@ -279,7 +274,6 @@
     }
   }
 
-  /* Pointer position in this canvas's own CSS pixels, or null if unused. */
   function localPointer(canvas, now, onlyNear) {
     if (!pointerActive(now)) return null;
     const r = canvas.getBoundingClientRect();
@@ -295,10 +289,9 @@
   };
 
   /* ======================================================================
-     1. MONOGRAM: the AR logo as a 3D wireframe slab
+     1. MONOGRAM
      ====================================================================== */
 
-  // Stroke centerlines traced from the logo SVG (viewBox 320 105 465 450).
   const LOGO_PTS = {
     a0: [544.3, 116.0], a1: [353.8, 446.5], a2: [547.2, 530.5], a3: [325.2, 487.8],
     r0: [573.2, 118.0], r1: [571.6, 544.0], r2: [682.2, 319.0], r3: [573.4, 400.0], r4: [778.2, 488.0]
@@ -329,7 +322,7 @@
     varying float vDepth;
 
     vec4 place(vec3 p, float g) {
-      if (g > 0.5) {                       // orbit ring: spin, then tilt
+      if (g > 0.5) {                       
         float c = cos(uRing), s = sin(uRing);
         p = vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
         p = vec3(p.x, p.y * 0.4536 - p.z * 0.8912, p.y * 0.8912 + p.z * 0.4536);
@@ -353,7 +346,7 @@
       vec2 rel = (ndc - uPtr) * aspect;
       float dist = length(rel);
       float glow = uPtrAmp * exp(-dist * dist * 5.0);
-      ndc += (rel / (dist + 1e-3)) * glow * 0.045 / aspect;     // gentle push away from the cursor
+      ndc += (rel / (dist + 1e-3)) * glow * 0.045 / aspect;     
 
       float w = uWidth * (1.0 + glow * 0.9);
       vec2 off = (nrm * aCorner.y + dir * (aCorner.x * 2.0 - 1.0)) * (w * 0.5) * 2.0 / uRes;
@@ -439,27 +432,27 @@
 
     buildGeometry() {
       const gl = this.gl;
-      const cx = 551.7, cy = 330.2, k = 2 / 431.6;               // center + scale so the logo is 2 units tall
+      const cx = 551.7, cy = 330.2, k = 2 / 431.6;               
       const P3 = {};
       Object.keys(LOGO_PTS).forEach((n) => { P3[n] = [(LOGO_PTS[n][0] - cx) * k, -(LOGO_PTS[n][1] - cy) * k]; });
 
-      const segs = [];                                             // {a, b, tone, group}
+      const segs = [];                                             
       const L = 5, D = 0.28;
       const zs = Array.from({ length: L }, (_, i) => -D + (2 * D * i) / (L - 1));
       zs.forEach((z, li) => {
         const edge = li === 0 || li === L - 1;
         LOGO_EDGES.forEach(([p, q]) => segs.push({ a: [...P3[p], z], b: [...P3[q], z], tone: edge ? 1.0 : 0.3, group: 0 }));
       });
-      Object.keys(P3).forEach((n) => {                             // ribs joining the slices
+      Object.keys(P3).forEach((n) => {                             
         for (let li = 0; li < L - 1; li++) segs.push({ a: [...P3[n], zs[li]], b: [...P3[n], zs[li + 1]], tone: 0.5, group: 0 });
       });
-      const R = 1.3, N = 96;                                       // dashed orbit ring
+      const R = 1.3, N = 96;                                       
       for (let i = 0; i < N; i++) {
         if (i % 3 === 2) continue;
         const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2;
         segs.push({ a: [R * Math.cos(a0), 0, R * Math.sin(a0)], b: [R * Math.cos(a1), 0, R * Math.sin(a1)], tone: 0.34, group: 1 });
       }
-      segs.push({ a: [R, 0, 0], b: [R * Math.cos(0.16), 0, R * Math.sin(0.16)], tone: 1.0, group: 1 }); // satellite
+      segs.push({ a: [R, 0, 0], b: [R * Math.cos(0.16), 0, R * Math.sin(0.16)], tone: 1.0, group: 1 }); 
 
       const corners = [[0, -1], [0, 1], [1, -1], [1, -1], [0, 1], [1, 1]];
       const data = new Float32Array(segs.length * 6 * 10);
@@ -473,7 +466,6 @@
       gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuf);
       gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 
-      // Dust: seeds only, the vertex shader does the rest.
       const n = 140, seeds = new Float32Array(n * 3);
       for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random();
       this.dustCount = n;
@@ -498,7 +490,6 @@
       mul(this.vp, this.proj, this.view);
       this.px = s;
       this.cssW = cssW;
-      // When the canvas is a background (small screens), park the logo off to one side.
       if (this.canvas.dataset.layout === "bg") this.shift = aspect > 1 ? [0.5, 0.0] : [0.0, -0.28];
       else this.shift = [0, 0];
     }
@@ -530,7 +521,7 @@
 
     click(cx, cy) {
       if (!hit(this.canvas, cx, cy, 0.12)) return;
-      this.spinTarget += Math.PI * 2;            // always settles facing front
+      this.spinTarget += Math.PI * 2;            
     }
 
     draw(t) {
@@ -539,10 +530,14 @@
       mul(this.model, this.m1, this.m2);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // --- wireframe: soft halo pass, then crisp pass
+      // Check if the Killer Frequency Theme is active
+      const isKiller = document.documentElement.classList.contains("fx-killer");
+      const baseCol = isKiller ? KILLER_PINK : ORANGE;
+      const hiCol = isKiller ? KILLER_CYAN : CREAM;
+
       gl.useProgram(this.lineProg);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuf);
-      const offs = [0, 12, 24, 32, 36], sizes = [3, 3, 2, 1, 1];         // aA aB aCorner aTone aGroup, 40-byte stride
+      const offs = [0, 12, 24, 32, 36], sizes = [3, 3, 2, 1, 1];         
       for (let a = 0; a < 5; a++) { gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, sizes[a], gl.FLOAT, false, 40, offs[a]); }
       gl.uniformMatrix4fv(U.uVP, false, this.vp);
       gl.uniformMatrix4fv(U.uModel, false, this.model);
@@ -553,8 +548,10 @@
       gl.uniform1f(U.uScan, -1.3 + ((t * 0.42) % 3.6));
       gl.uniform1f(U.uDist, this.dist);
       gl.uniform2f(U.uShift, this.shift[0], this.shift[1]);
-      gl.uniform3f(U.uCol, ORANGE[0], ORANGE[1], ORANGE[2]);
-      gl.uniform3f(U.uHi, CREAM[0], CREAM[1], CREAM[2]);
+      
+      gl.uniform3f(U.uCol, baseCol[0], baseCol[1], baseCol[2]);
+      gl.uniform3f(U.uHi, hiCol[0], hiCol[1], hiCol[2]);
+      
       const wpx = (lite() ? 1.3 : 1.6) * this.px;
       gl.uniform1f(U.uHalo, 1); gl.uniform1f(U.uWidth, wpx * 5);
       gl.drawArrays(gl.TRIANGLES, 0, this.vertCount);
@@ -562,7 +559,6 @@
       gl.drawArrays(gl.TRIANGLES, 0, this.vertCount);
       for (let a = 0; a < 5; a++) gl.disableVertexAttribArray(a);
 
-      // --- dust (square pixels, on purpose)
       gl.useProgram(this.dustProg);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.dustBuf);
       gl.enableVertexAttribArray(0);
@@ -572,14 +568,14 @@
       gl.uniform1f(this.D.uPx, 2.0 * this.px);
       gl.uniform1f(this.D.uDist, this.dist);
       gl.uniform2f(this.D.uShift, this.shift[0], this.shift[1]);
-      gl.uniform3f(this.D.uCol, ORANGE[0], ORANGE[1], ORANGE[2]);
+      gl.uniform3f(this.D.uCol, baseCol[0], baseCol[1], baseCol[2]);
       gl.drawArrays(gl.POINTS, 0, this.dustCount);
       gl.disableVertexAttribArray(0);
     }
   }
 
   /* ======================================================================
-     CONTOURS: a fragment shader engine for the topographic lines
+     CONTOURS
      ====================================================================== */
   const FULL_VS = `
     attribute vec2 aPos;
@@ -604,14 +600,12 @@
       gl.disable(gl.DEPTH_TEST);
     }
     dispose() { this.gl.deleteProgram(this.prog); this.gl.deleteBuffer(this.buf); }
-    // crisp on high-DPI screens (the stage also enforces a pixel budget)
     pixelScale(q) {
       if (this.cfg.scale) return this.cfg.scale(lite(), q);
       return (lite() ? 0.6 : Math.min(devicePixelRatio || 1, 1.5)) * q;
     }
     resize(w, h, cssW, cssH, s) { this.w = w; this.h = h; this.cssW = cssW; this.cssH = cssH; this.s = s; }
 
-    // pointer in "height units": (css px / canvas css height), y up. Same space as the shader's ps.
     toField(x, y, r) { return { x: x / r.height, y: (r.height - y) / r.height }; }
 
     step(dt, now, t, still) {
@@ -656,13 +650,24 @@
       gl.uniform3f(U.uPtr, this.ptr.x, this.ptr.y, this.ptr.amp);
       gl.uniform4fv(U.uRip, this.rip.a);
       gl.uniform1f(U.uScroll, c.scroll ? (window.scrollY * c.scroll) / this.cssH : 0);
-      gl.uniform3f(U.uInk, c.ink[0], c.ink[1], c.ink[2]);
-      gl.uniform3f(U.uAcc, ORANGE[0], ORANGE[1], ORANGE[2]);
+      
+      // Override colors for the Killer theme
+      const isKiller = document.documentElement.classList.contains("fx-killer");
+      let ink = c.ink;
+      let acc = ORANGE;
+
+      if (isKiller) {
+        ink = KILLER_CYAN; 
+        acc = KILLER_PINK;
+      }
+
+      gl.uniform3f(U.uInk, ink[0], ink[1], ink[2]);
+      gl.uniform3f(U.uAcc, acc[0], acc[1], acc[2]);
       gl.uniform2f(U.uTone, c.minor, c.major);
       gl.uniform2f(U.uSeed, c.seed[0], c.seed[1]);
       gl.uniform1f(U.uFreq, c.freq);
       gl.uniform1f(U.uPulse, c.pulse);
-      gl.uniform1f(U.uLinePx, 1.0667 * this.s);      // line width stays ~1px of CSS at any resolution
+      gl.uniform1f(U.uLinePx, 1.0667 * this.s);      
       gl.uniform1f(U.uS, this.s);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disableVertexAttribArray(0);
@@ -687,15 +692,15 @@
     uniform float uS;
     ${GLSL_NOISE}
     void main() {
-      vec2 ps = gl_FragCoord.xy / uRes.y;                       // screen space, in canvas heights
-      vec2 p = (ps + vec2(0.0, uScroll)) * uFreq + uSeed;       // terrain space (scrolls slower than the page)
+      vec2 ps = gl_FragCoord.xy / uRes.y;                       
+      vec2 p = (ps + vec2(0.0, uScroll)) * uFreq + uSeed;       
       float t = uT * 0.02;
       float f = fbm(p * 1.7 + vec2(t * 3.0, -t * 2.0));
       f += 0.3 * fbm(p * 3.6 - vec2(t * 2.2, t * 1.4) + 7.0);
 
-      vec2 q = ps - uPtr.xy;                                    // the cursor raises a hill
+      vec2 q = ps - uPtr.xy;                                    
       float heat = uPtr.z * 0.22 * exp(-dot(q, q) * 26.0);
-      for (int i = 0; i < 6; i++) {                             // clicks send rings through the terrain
+      for (int i = 0; i < 6; i++) {                             
         vec4 r = uRip[i];
         float age = uT - r.z;
         if (r.w > 0.0 && age >= 0.0) {
@@ -709,11 +714,11 @@
       float dist = abs(fract(level + 0.5) - 0.5);
       ${deriv ? "float fw = max(fwidth(level), 1e-4);" : "float fw = 0.05;"}
       float line = 1.0 - clamp(dist / (fw * uLinePx), 0.0, 1.0);
-      line *= 1.0 - smoothstep(0.35, 0.65, fw / uS * 0.75);     // no mush where the slope is steep
+      line *= 1.0 - smoothstep(0.35, 0.65, fw / uS * 0.75);     
       float major = step(mod(floor(level + 0.5), 5.0), 0.5);
       float a = line * mix(uTone.x, uTone.y, major);
 
-      float travel = mod(uT * 0.32, 3.2) - 0.6;                 // an orange wavefront crosses the lines now and then
+      float travel = mod(uT * 0.32, 3.2) - 0.6;                 
       float across = ps.x * 0.9 + ps.y * 0.35 - travel;
       float sweep = uPulse * exp(-across * across * 38.0);
       float hot = clamp(abs(heat) * 5.0 + sweep, 0.0, 1.0);
@@ -732,22 +737,23 @@
     uniform vec4 uRip[6];
     uniform float uScroll;
     uniform vec3 uInk;
+    uniform vec3 uAcc;
     void main() {
       float asp = uRes.x / uRes.y;
       vec2 c = vec2(0.5 * asp, 0.5);
       vec2 p = gl_FragCoord.xy / uRes.y - c;
       vec2 ptr = uPtr.xy - c;
-      vec2 origin = vec2(0.0, 0.12) + ptr * 0.05 * uPtr.z;    // the burst leans toward the cursor
+      vec2 origin = vec2(0.0, 0.12) + ptr * 0.05 * uPtr.z;    
       vec2 r = p - origin;
       float rad = length(r);
-      float ang = atan(r.y, r.x) + uScroll * 1.2;             // scrolling turns the burst
+      float ang = atan(r.y, r.x) + uScroll * 1.2;             
 
       const float N = 20.0;
       float phase = ang / 6.2831853 * N + uT * 0.02;
       float w = fract(phase);
       float aa = N / 6.2831853 / max(rad, 0.02) / uRes.y * 1.5;
       float s = smoothstep(0.0, aa, w) - smoothstep(0.5, 0.5 + aa, w);
-      float orangeRay = step(mod(floor(phase), 4.0), 0.5);    // every 4th ray is orange
+      float orangeRay = step(mod(floor(phase), 4.0), 0.5);    
       float fade = smoothstep(0.03, 0.3, rad) * exp(-rad * 0.9);
 
       float pa = atan(ptr.y - origin.y, ptr.x - origin.x);
@@ -766,13 +772,12 @@
       pulse = clamp(pulse, 0.0, 1.5);
 
       float a = s * fade * (mix(0.045, 0.10, orangeRay) + spot * 0.3 + pulse * 0.2) + pulse * 0.16 * fade;
-      vec3 col = mix(uInk, ${V3(ORANGE)}, clamp(orangeRay + spot * 1.2 + pulse, 0.0, 1.0));
+      vec3 col = mix(uInk, uAcc, clamp(orangeRay + spot * 1.2 + pulse, 0.0, 1.0));
       a = clamp(a, 0.0, 1.0);
       gl_FragColor = vec4(col * a, a);
     }
   `;
 
-  // Line tint per background: cream lines on navy/black, black lines on cream.
   const ON_NAVY = { ink: CREAM, minor: 0.10, major: 0.26 };
   const ON_BLACK = { ink: CREAM, minor: 0.11, major: 0.27 };
   const ON_CREAM = { ink: BLACK, minor: 0.10, major: 0.26 };
@@ -781,17 +786,12 @@
     const cfg = Object.assign({ frag: CONTOUR_FS, seed: [0, 0], freq: 1, pulse: 0, scroll: 0 }, tone, o);
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
   };
-  // The sunburst is a very smooth image, so it renders a little lighter than the contours.
   const rays = (tone, o) => {
     const cfg = Object.assign({ frag: RAYS_FS, seed: [0, 0], freq: 1, pulse: 0, trail: false, click: 1.2, scale: (l, q) => (l ? 0.4 : 0.75) * q }, tone, o);
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
   };
   const fieldEffects = (tone, o) => ({ contours: contours(tone, o), rays: rays(tone, o) });
 
-  /* ======================================================================
-     Wiring: which canvas gets which effect. Each section can run any of its
-     effects (or none); the Effects Lab (the hidden bolt) switches between them.
-     ====================================================================== */
   const FIELD = { maxPixels: 2.0e6 };
   const SLOTS = [
     { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
@@ -803,16 +803,25 @@
   ];
   const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays" };
 
-  // choices survive a reload; anything unknown falls back to the default
   const STORE = "portfolio-fx-v3";
   let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { /* storage unavailable */ }
+  try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { }
   const choice = {};
   SLOTS.forEach((sl) => { choice[sl.key] = saved[sl.key] === "off" || sl.effects[saved[sl.key]] ? saved[sl.key] : sl.initial; });
-  choice.look = saved.look === "glass" ? "glass" : "brutalist";     // the page's overall style (see styles.css)
+  choice.look = saved.look === "glass" ? "glass" : (saved.look === "killer" ? "killer" : "brutalist");     
 
   function apply() {
     document.documentElement.classList.toggle("fx-glass", choice.look === "glass");
+    document.documentElement.classList.toggle("fx-killer", choice.look === "killer");
+    
+    // Manage background music for Killer Frequency theme
+    if (choice.look === 'killer') {
+      themeAudio.play().catch(e => console.log('Audio autoplay prevented by browser until interaction:', e));
+    } else {
+      themeAudio.pause();
+      themeAudio.currentTime = 0;
+    }
+
     SLOTS.forEach((sl) => {
       if (!sl.stage) return;
       if (choice[sl.key] === "off") { sl.stage.setOn(false); return; }
@@ -822,10 +831,9 @@
     document.querySelectorAll(".fx-lab button[data-slot]").forEach((b) => {
       b.setAttribute("aria-pressed", String(choice[b.dataset.slot] === b.dataset.value));
     });
-    try { localStorage.setItem(STORE, JSON.stringify(choice)); } catch (e) { /* storage unavailable */ }
+    try { localStorage.setItem(STORE, JSON.stringify(choice)); } catch (e) { }
   }
 
-  /* ---- The Effects Lab: a hidden lightning bolt in the hero opens it ---- */
   function setupLab() {
     const bolt = document.querySelector(".fx-bolt");
     if (!bolt) return;
@@ -838,8 +846,9 @@
     const rows = SLOTS.filter((sl) => sl.stage).map((sl) =>
       `<div class="fx-lab-row"><span class="fx-lab-label">${sl.label}</span>${Object.keys(sl.effects).map((k) =>
         `<button type="button" data-slot="${sl.key}" data-value="${k}" aria-pressed="false">${NAMES[k]}</button>`).join("")}<button type="button" data-slot="${sl.key}" data-value="off" aria-pressed="false">Off</button></div>`).join("");
+    
     panel.innerHTML = `<div class="fx-lab-head"><span>Effects lab</span><button type="button" class="fx-lab-close" aria-label="Close effects lab">&times;</button></div>${rows}
-      <div class="fx-lab-row fx-lab-look"><span class="fx-lab-label">Look</span><button type="button" data-slot="look" data-value="brutalist" aria-pressed="false">Brutalist</button><button type="button" data-slot="look" data-value="glass" aria-pressed="false">Glass</button></div>
+      <div class="fx-lab-row fx-lab-look"><span class="fx-lab-label">Look</span><button type="button" data-slot="look" data-value="brutalist" aria-pressed="false">Brutalist</button><button type="button" data-slot="look" data-value="glass" aria-pressed="false">Glass</button><button type="button" data-slot="look" data-value="killer" aria-pressed="false">Killer Freq</button></div>
       <div class="fx-lab-row fx-lab-foot"><button type="button" data-reset="default">Reset</button><button type="button" data-reset="off">Effects off</button></div>`;
     document.body.appendChild(panel);
     bolt.setAttribute("aria-controls", "fx-lab");
@@ -866,9 +875,14 @@
       choice[b.dataset.slot] = b.dataset.value;
       apply();
     });
+
+    // Inject unobtrusive music credit to DOM
+    const musicCredit = document.createElement("div");
+    musicCredit.className = "killer-music-credit";
+    musicCredit.textContent = "Music: Hackers by White Bat Audio";
+    document.body.appendChild(musicCredit);
   }
 
-  // Start after load + idle so the effects never compete with first paint.
   const start = () => {
     SLOTS.forEach((sl) => {
       const cv = document.getElementById(sl.id);
