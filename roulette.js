@@ -20,7 +20,7 @@
   const n = originals.length;
   if (n < 2) return;                       // nothing to rotate between
 
-  const INTERVAL = 5600;                   // ms on each project (keep in sync with --roulette-interval)
+  const INTERVAL = 5600;                   // ms on each project
   const MIN_SLOTS = 6;                     // a wheel needs enough cards for the neighbours to show
   const PERSPECTIVE = 1900;                // keep in sync with the stage's perspective in styles.css
   const slots = n * Math.ceil(MIN_SLOTS / n);
@@ -40,7 +40,6 @@
   const prev = root.querySelector("[data-roulette-prev]");
   const next = root.querySelector("[data-roulette-next]");
   const toggle = root.querySelector("[data-roulette-toggle]");
-  const pointer = root.querySelector(".roulette-pointer");
 
   let active = 0;                          // keeps counting up, so the wheel always turns the same way
   let timer = 0;
@@ -64,29 +63,17 @@
     });
   }
 
-  function tick() {
-    if (!pointer || reduce.matches) return;
-    pointer.classList.remove("is-tick");
-    void pointer.offsetWidth;              // restart the animation
-    pointer.classList.add("is-tick");
-  }
-
   const canRun = () => !reduce.matches && !userPaused && !hovering && !focused && visible && !document.hidden;
 
   function schedule() {
     clearTimeout(timer);
-    root.classList.remove("is-playing");
     ring.setAttribute("aria-live", canRun() ? "off" : "polite");
-    if (!canRun()) return;
-    void root.offsetWidth;                 // restart the timer bar
-    root.classList.add("is-playing");
-    timer = setTimeout(() => go(1), INTERVAL);
+    if (canRun()) timer = setTimeout(() => go(1), INTERVAL);
   }
 
   function go(delta) {
     active += delta;
     render();
-    tick();
     schedule();
   }
 

@@ -809,8 +809,10 @@
   try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { /* storage unavailable */ }
   const choice = {};
   SLOTS.forEach((sl) => { choice[sl.key] = saved[sl.key] === "off" || sl.effects[saved[sl.key]] ? saved[sl.key] : sl.initial; });
+  choice.look = saved.look === "glass" ? "glass" : "brutalist";     // the page's overall style (see styles.css)
 
   function apply() {
+    document.documentElement.classList.toggle("fx-glass", choice.look === "glass");
     SLOTS.forEach((sl) => {
       if (!sl.stage) return;
       if (choice[sl.key] === "off") { sl.stage.setOn(false); return; }
@@ -837,7 +839,8 @@
       `<div class="fx-lab-row"><span class="fx-lab-label">${sl.label}</span>${Object.keys(sl.effects).map((k) =>
         `<button type="button" data-slot="${sl.key}" data-value="${k}" aria-pressed="false">${NAMES[k]}</button>`).join("")}<button type="button" data-slot="${sl.key}" data-value="off" aria-pressed="false">Off</button></div>`).join("");
     panel.innerHTML = `<div class="fx-lab-head"><span>Effects lab</span><button type="button" class="fx-lab-close" aria-label="Close effects lab">&times;</button></div>${rows}
-      <div class="fx-lab-row fx-lab-foot"><button type="button" data-reset="default">Reset</button><button type="button" data-reset="off">All off</button></div>`;
+      <div class="fx-lab-row fx-lab-look"><span class="fx-lab-label">Look</span><button type="button" data-slot="look" data-value="brutalist" aria-pressed="false">Brutalist</button><button type="button" data-slot="look" data-value="glass" aria-pressed="false">Glass</button></div>
+      <div class="fx-lab-row fx-lab-foot"><button type="button" data-reset="default">Reset</button><button type="button" data-reset="off">Effects off</button></div>`;
     document.body.appendChild(panel);
     bolt.setAttribute("aria-controls", "fx-lab");
     bolt.classList.add("is-ready");
@@ -854,7 +857,12 @@
       const b = e.target.closest("button");
       if (!b) return;
       if (b.classList.contains("fx-lab-close")) { setOpen(false); return; }
-      if (b.dataset.reset) { SLOTS.forEach((sl) => { choice[sl.key] = b.dataset.reset === "off" ? "off" : sl.initial; }); apply(); return; }
+      if (b.dataset.reset) {
+        SLOTS.forEach((sl) => { choice[sl.key] = b.dataset.reset === "off" ? "off" : sl.initial; });
+        if (b.dataset.reset === "default") choice.look = "brutalist";
+        apply();
+        return;
+      }
       choice[b.dataset.slot] = b.dataset.value;
       apply();
     });
