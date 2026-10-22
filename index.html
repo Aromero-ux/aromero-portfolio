@@ -15,6 +15,7 @@
             h.classList.toggle('fx-glass-mirror', s.glass === 'mirror');
             h.classList.toggle('fx-tilt', s.tilt === 'on');
             h.classList.toggle('fx-no-scan', s.scan === 'off');
+            h.classList.toggle('fx-sphere', s.layout === 'sphere');
         })();
     </script>
     
@@ -443,11 +444,10 @@
             </article>
 
             <article class="roulette-card glass-card glass-card--feature bg-[#000000] border-4 border-[#FE7F2D] p-8 flex flex-col justify-between hover:border-[#EAECF0] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_#FE7F2D]">
-                <span class="feature-shimmer" aria-hidden="true"></span>
                 <div>
                     <div class="flex justify-between items-start mb-4">
                         <div>
-                            <h4 class="text-2xl font-black text-[#EAECF0] uppercase">This Portfolio<span class="text-[#FE7F2D]">!</span></h4>
+                            <h4 class="text-2xl font-black text-[#EAECF0] uppercase">This Portfolio</h4>
                             <p class="text-xs font-bold text-[#FE7F2D] uppercase tracking-wider mt-1">aromero.dev &bull; Frontend Engineering & Creative Coding</p>
                         </div>
                         <span class="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 bg-[#FE7F2D] text-[#000000] sharp-edge uppercase">
@@ -478,7 +478,7 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#FE7F2D] font-black">&rsaquo;</span>
-                            <span><strong class="text-[#FE7F2D]">Built to Be Found:</strong> Semantic HTML, structured data, scroll-aware navigation and a serverless Formspree contact form. Psst: there is a hidden &#9889; on this page.</span>
+                            <span><strong class="text-[#FE7F2D]">Built to Be Found:</strong> Semantic HTML, structured data, scroll-aware navigation and a serverless Formspree contact form. Psst: there is a hidden lightning bolt on this page.</span>
                         </li>
                     </ul>
 
@@ -671,7 +671,7 @@
                 </div>
                 
                 <a href="https://buymeacoffee.com/aromerodev" target="_blank" rel="noopener noreferrer" class="group block p-4 bg-[#000000] border-4 border-[#FE7F2D] hover:bg-[#FE7F2D] transition-colors sharp-edge mt-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-                    <img src="assets/qr-code.png" alt="Buy Me a Coffee QR Code" class="w-32 h-32 object-contain group-hover:scale-105 transition-transform duration-300">
+                    <img src="assets/qr-code.png" alt="Buy Me a Coffee QR Code" width="128" height="128" loading="lazy" decoding="async" class="w-32 h-32 object-contain group-hover:scale-105 transition-transform duration-300">
                 </a>
                 
                 <a href="https://buymeacoffee.com/aromerodev" target="_blank" rel="noopener noreferrer" class="text-[#EAECF0] hover:text-[#FE7F2D] text-sm font-bold uppercase tracking-widest underline underline-offset-4 decoration-[#FE7F2D] decoration-2 transition-colors">

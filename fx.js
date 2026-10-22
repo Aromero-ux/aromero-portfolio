@@ -149,16 +149,17 @@
      browser silences analysed audio, so the track plays untouched and the visuals use a
      simulated beat instead. */
   const BANDS = 64;
+  const WAVE_N = 256;
   const audio = (() => {
     const SRC = "assets/hackers.mp3";
     const TIME_KEY = "synthwaveAudioTime";
-    const levels = { bass: 0, mid: 0, treble: 0, beat: 0 };
+    const levels = { bass: 0, mid: 0, treble: 0, beat: 0, calm: 0 };
     const bands = new Float32Array(BANDS);
-    const peaks = new Float32Array(BANDS);
+    const wave = new Float32Array(WAVE_N);                   // -1..1, what the wave lines draw
     const ranges = [];
     const analysable = location.protocol !== "file:";
-    let el = null, ctx = null, analyser = null, gain = null, bins = null;
-    let wanted = false, muted = false, armed = false, lastNow = -1, slowBass = 0;
+    let el = null, ctx = null, analyser = null, gain = null, bins = null, td = null;
+    let wanted = false, muted = false, armed = false, lastNow = -1, slowBass = 0, peak = 0.1;
 
     const ensure = () => {
       if (el) return;
@@ -183,6 +184,7 @@
         analyser.connect(gain);
         gain.connect(ctx.destination);
         bins = new Uint8Array(analyser.frequencyBinCount);
+        td = new Uint8Array(analyser.fftSize);
         const top = Math.floor(bins.length * 0.74);          // up to ~16 kHz, log-spaced bands
         for (let b = 0; b < BANDS; b++) {
           const lo = Math.max(1, Math.round(Math.exp((Math.log(top) * b) / BANDS)));
@@ -191,7 +193,7 @@
         }
       } catch (e) {
         if (ctx && ctx.close) ctx.close();
-        ctx = analyser = gain = bins = null;
+        ctx = analyser = gain = bins = td = null;
       }
     };
 
@@ -238,7 +240,7 @@
 
     const active = () => !!el && !el.paused;
 
-    // once per frame: refresh bands, peaks and the bass / mid / treble / beat levels
+    // once per frame: refresh bands, the waveform and the bass / mid / treble / beat levels
     function update(now) {
       if (now === lastNow) return;
       lastNow = now;
@@ -262,17 +264,41 @@
           v = 0.05 + 0.035 * (0.5 + 0.5 * Math.sin(now * 0.0011 + b * 0.35));
         }
         bands[b] = v > bands[b] ? bands[b] + (v - bands[b]) * 0.6 : bands[b] * 0.88 + v * 0.12;
-        peaks[b] = Math.max(bands[b], peaks[b] - 0.012);
+      }
+
+      if (playing && analyser) {                               // the real signal, started on a rising zero crossing so the shape holds still
+        analyser.getByteTimeDomainData(td);
+        const lim = td.length >> 1;
+        let s = 0;
+        while (s < lim && !(td[s] < 128 && td[s + 1] >= 128)) s++;
+        if (s >= lim) s = 0;
+        let m = 0;
+        for (let i = 0; i < WAVE_N; i++) m = Math.max(m, Math.abs(td[s + i * 4] - 128) / 128);
+        peak = Math.max(peak * 0.995, m, 0.08);
+        for (let i = 0; i < WAVE_N; i++) {
+          const v = Math.max(-1, Math.min(1, ((td[s + i * 4] - 128) / 128 / peak) * 0.9));
+          wave[i] += (v - wave[i]) * 0.6;
+        }
+      } else {                                                 // no signal to read: a ripple built from the bands, still moving with the song
+        const ph = playing && el ? el.currentTime : now / 1000;
+        const k0 = playing ? 1.6 : 0.5;
+        for (let i = 0; i < WAVE_N; i++) {
+          const x = i / WAVE_N;
+          let v = 0;
+          for (let k = 0; k < 6; k++) v += (bands[k * 9 + 2] * Math.sin(x * (k + 2) * 6.2832 + ph * (1.5 + k * 0.6) + k * 1.7)) / (1 + k * 0.4);
+          wave[i] += (v * k0 - wave[i]) * 0.3;
+        }
       }
       const mean = (a, z) => { let t = 0; for (let i = a; i < z; i++) t += bands[i]; return t / (z - a); };
       levels.bass = Math.min(1, mean(0, 14) * 1.3);
       levels.mid = Math.min(1, mean(14, 41) * 1.3);
       levels.treble = Math.min(1, mean(41, BANDS) * 1.5);
       slowBass += (levels.bass - slowBass) * 0.04;
+      levels.calm += ((levels.bass + levels.mid + levels.treble) / 3 - levels.calm) * 0.02;
       levels.beat = Math.max(levels.beat * 0.88, Math.min(1, Math.max(0, (levels.bass - slowBass) * 3.2)));
     }
 
-    return { start, stop, setMuted, update, active, levels, bands, peaks };
+    return { start, stop, setMuted, update, active, levels, bands, wave };
   })();
 
   class Stage {
@@ -379,7 +405,7 @@
       this.raf = requestAnimationFrame(this.tick);
       if (!this.fx) return;
       const busy = this.fx.busy(now);
-      const minDt = settings.motion === "calm" ? 33 : busy ? (this.opts.busyDt || 14) : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
+      const minDt = settings.motion === "calm" ? 33 : busy ? 14 : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
       if (now - this.lastRender < minDt) return;
       const dt = Math.min((now - this.lastRender) / 1000, 0.1);
       this.lastRender = now;
@@ -916,15 +942,15 @@
     uniform float uT;
     uniform vec3 uPtr;
     uniform vec4 uRip[6];
-    uniform vec4 uAudio;                                     // bass, mid, treble, beat
+    uniform vec4 uAudio;                                     // bass, mid, treble, calm (a slow average, so nothing pulses on the beat)
     ${GLSL_NOISE}
     void main() {
       vec2 frag = gl_FragCoord.xy;
       float asp = uRes.x / uRes.y;
       vec2 uv = frag / uRes;
       float px = 1.0 / uRes.y;
-      float bass = uAudio.x, mid = uAudio.y, treb = uAudio.z, beat = uAudio.w;
-      float energy = (bass + mid + treb) / 3.0;
+      float treb = uAudio.z;
+      float energy = uAudio.w;
       float horizon = 0.30;
       vec2 par = (uPtr.xy - vec2(0.5 * asp, 0.5)) * uPtr.z;  // a hint of parallax toward the cursor
 
@@ -939,7 +965,7 @@
       // the perspective grid, evaluated everywhere so its derivatives stay valid
       float y = horizon - uv.y;
       float zf = 0.06 / max(y, 0.0015);
-      float speed = 0.9 + energy * 1.6 + beat * 0.6;
+      float speed = 0.9 + energy * 1.2;
       vec2 g = vec2((uv.x - 0.5) * asp * zf * 34.0, zf * 20.0 + uT * speed);
       ${deriv ? "float wx = max(fwidth(g.x), 1e-4); float wz = max(fwidth(g.y), 1e-4);" : "float wx = 0.05; float wz = 0.05;"}
 
@@ -956,7 +982,7 @@
         float tw = 0.55 + 0.45 * sin(uT * (1.5 + sh * 4.0) + sh * 40.0);
         col += vec3(0.8, 0.9, 1.0) * star * tw * smoothstep(0.25, 0.7, h) * (0.55 + treb * 1.3);
 
-        float R = 0.27 * (1.0 + 0.035 * bass + 0.05 * beat + 0.04 * pulse);   // the sun
+        float R = 0.27 * (1.0 + 0.04 * pulse);   // the sun, steady
         vec2 sunC = vec2(0.76 * asp + par.x * 0.02, horizon + R * 0.48 + par.y * 0.01);
         vec2 q = vec2(uv.x * asp, uv.y) - sunC;
         float d = length(q);
@@ -965,17 +991,21 @@
         vec3 sunCol = mix(vec3(1.0, 0.05, 0.50), vec3(1.0, 0.42, 0.12), smoothstep(0.0, 0.5, sy));
         sunCol = mix(sunCol, vec3(1.0, 0.86, 0.28), smoothstep(0.42, 1.0, sy));
         float below = clamp(-q.y / R, 0.0, 1.0);             // the cut-out stripes, widening toward the bottom
-        float f = fract(below * 14.0 - uT * 0.35 - beat * 0.15);
+        float f = fract(below * 14.0 - uT * 0.35);
         float vis = smoothstep(0.10 + 0.62 * below, 0.15 + 0.62 * below, f);
         disc *= mix(1.0, vis, smoothstep(0.0, 0.06, below));
-        col += vec3(1.0, 0.25, 0.60) * exp(-max(d - R, 0.0) * 5.5) * (0.40 + 0.55 * energy + 0.3 * beat);
-        col = mix(col, sunCol * (0.9 + 0.35 * bass + 0.2 * pulse), disc);
+
+        float outside = max(d - R, 0.0);                     // the aura: the same glow as ever, with mist drifting through it
+        float mist = fbm(q / R * 1.6 + vec2(uT * 0.04, -uT * 0.055));
+        col += vec3(1.0, 0.25, 0.60) * exp(-outside * 5.5) * (0.6 + 0.5 * energy) * (0.8 + 0.5 * mist);
+        col += vec3(1.0, 0.30, 0.65) * exp(-outside * 2.4) * mist * mist * 0.5;
+        col = mix(col, sunCol * (1.05 + 0.2 * pulse), disc);
 
         float away = smoothstep(0.05, 0.55, abs(uv.x - 0.76));   // mountains, lowest in front of the sun
         float ridge = horizon + 0.006 + (0.012 + 0.065 * away) * (0.4 + 1.2 * fbm(vec2(uv.x * asp * 2.1 + 7.0 + par.x * 0.4, 1.3)));
         col = mix(col, vec3(0.035, 0.008, 0.075), 1.0 - smoothstep(ridge - px, ridge + px, uv.y));
         float rim = (1.0 - smoothstep(0.0, 2.2 * px, abs(uv.y - ridge)));
-        col += vec3(0.0, 0.85, 1.0) * rim * (0.22 + 0.4 * mid);
+        col += vec3(0.0, 0.85, 1.0) * rim * (0.22 + 0.5 * energy);
       } else {
         col = mix(vec3(0.01, 0.0, 0.04), vec3(0.17, 0.0, 0.26), exp(-y * 7.0));
         float dx = abs(fract(g.x) - 0.5);
@@ -983,7 +1013,7 @@
         float lx = 1.0 - smoothstep(0.0, wx * 1.5, 0.5 - dx);
         float lz = 1.0 - smoothstep(0.0, wz * 1.5, 0.5 - dz);
         float fade = smoothstep(0.0, 0.16, y);
-        float bright = 0.5 + 0.9 * bass + 0.8 * beat + 0.3 * pulse;
+        float bright = 0.8 + 1.0 * energy + 0.3 * pulse;
         col += vec3(0.0, 0.9, 1.0) * lz * bright * fade;
         col += vec3(1.0, 0.10, 0.60) * lx * bright * fade;
         float glow = (1.0 - smoothstep(0.0, wx * 6.0, 0.5 - dx)) * 0.10 + (1.0 - smoothstep(0.0, wz * 6.0, 0.5 - dz)) * 0.10;
@@ -992,7 +1022,7 @@
       }
 
       float hz = abs(uv.y - horizon);                         // glowing horizon line
-      col += vec3(1.0, 0.30, 0.70) * exp(-hz * 120.0) * (0.42 + 0.6 * bass + 0.45 * beat);
+      col += vec3(1.0, 0.30, 0.70) * exp(-hz * 120.0) * (0.6 + 0.7 * energy);
       col += vec3(1.0, 0.85, 0.95) * exp(-hz * 420.0) * 0.6;
       col *= 1.0 - 0.38 * length((uv - 0.5) * vec2(0.9, 0.8));
       gl_FragColor = vec4(col, 1.0);
@@ -1003,91 +1033,57 @@
       frag: SUNSET_FS, ink: CREAM, minor: 0, major: 0, seed: [0, 0], freq: 1, pulse: 0, audio: true, trail: false, click: 1.0,
       scale: (l, q) => (l ? 0.5 : Math.min(devicePixelRatio || 1, 1.25)) * q,
       uniforms: ["uAudio"],
-      extra: (gl, U) => gl.uniform4f(U.uAudio, audio.levels.bass, audio.levels.mid, audio.levels.treble, audio.levels.beat)
+      extra: (gl, U) => gl.uniform4f(U.uAudio, audio.levels.bass, audio.levels.mid, audio.levels.treble, audio.levels.calm)
     };
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
   })();
 
-  /* ---- FREQUENCY LINES: a page-wide, audio-reactive overlay (bars, waterfall or wave) ------ */
-  const FREQ_ROWS = 24;
+  /* ---- WAVE LINES: a page-wide overlay that draws the sound itself: the live waveform, with its recent past stacked above it ------ */
+  const WAVE_ROWS = 10;
   const FREQ_FS = () => `
     ${FRAG_PRECISION}
     uniform vec2 uRes;
     uniform float uT;
-    uniform float uMode;
     uniform float uShift;
     uniform float uGain;
     uniform sampler2D uTex;
-    const float H = ${FREQ_ROWS + 1}.0;                      // history rows plus one row of peak-hold values
-    float spec(float x, float row) { return texture2D(uTex, vec2(x, (row + 0.5) / H)).r; }
+    float wv(float x, float row) { return texture2D(uTex, vec2(clamp(x, 0.0, 1.0), row)).r * 2.0 - 1.0; }
     void main() {
       vec2 uv = gl_FragCoord.xy / uRes;
-      float pxy = 1.0 / uRes.y;
       vec3 pink = vec3(1.0, 0.0, 0.5);
       vec3 cyan = vec3(0.0, 0.9, 1.0);
       vec3 col = vec3(0.0);
       float a = 0.0;
-
-      if (uMode < 1.5) {                                      // BARS: an equalizer along the bottom edge
-        float N = 80.0;
-        float cx = (floor(uv.x * N) + 0.5) / N;
-        float v = spec(cx, 0.0);
-        float hgt = v * 0.34 * uGain;
-        float dxp = abs(uv.x - cx) * uRes.x;
-        float w = max(1.0, uRes.x / N * 0.14);
-        float inBar = 1.0 - smoothstep(w * 0.5, w * 0.5 + 1.0, dxp);
-        float top = smoothstep(hgt + 1.5 * pxy, hgt - 1.5 * pxy, uv.y);
-        vec3 c = mix(cyan, pink, clamp(uv.y / 0.34, 0.0, 1.0));
-        float body = inBar * top * (0.22 + 0.5 * v);
-        float glow = exp(-dxp / (w * 2.4)) * top * 0.09;
-        float capY = spec(cx, H - 1.0) * 0.34 * uGain + 0.007;
-        float cap = inBar * (1.0 - smoothstep(0.0, 2.2 * pxy, abs(uv.y - capY))) * 0.75;
-        col = c * (body + glow) + vec3(cap);
-        a = body + glow + cap;
-      } else if (uMode < 2.5) {                               // WATERFALL: stacked lines, the song scrolling away
-        for (int i = 0; i < 16; i++) {
-          float fi = float(i);
-          float t = fi / 15.0;
-          float base = 0.07 + 0.60 * pow(t, 0.9);
-          float amp = spec(uv.x, max(fi - uShift, 0.0));
-          float edge = smoothstep(0.0, 0.1, uv.x) * smoothstep(1.0, 0.9, uv.x);
-          float yl = base + amp * edge * uGain * mix(0.17, 0.07, t);
-          float d = abs(uv.y - yl) / pxy;
-          float wpx = mix(2.2, 1.4, t);
-          float l = 1.0 - smoothstep(wpx * 0.5, wpx * 0.5 + 1.2, d);
-          float br = mix(1.0, 0.5, t) * (0.42 + amp * 1.3);
-          col += mix(cyan, pink, clamp(t + amp * 0.35, 0.0, 1.0)) * l * br;
-          a += l * br;
-        }
-      } else {                                                // WAVE: three ribbons whose shape is the spectrum
-        float ak[8];
-        for (int k = 0; k < 8; k++) ak[k] = spec((float(k) + 0.5) / 8.0, 0.0);
-        for (int r = 0; r < 3; r++) {
-          float fr = float(r);
-          float yw = 0.0;
-          for (int k = 0; k < 8; k++) {
-            float fk = float(k);
-            yw += ak[k] * sin(uv.x * (5.0 + fk * 3.1) + uT * (0.7 + fk * 0.23) + fk * 1.9 + fr * 1.3) / (1.0 + fk * 0.35);
-          }
-          float yl = 0.2 + fr * 0.3 + yw * 0.07 * uGain + sin(uv.x * 3.0 + uT * 0.5 + fr) * 0.012;
-          float d = abs(uv.y - yl) / pxy;
-          float l = (1.0 - smoothstep(0.8, 2.2, d)) * 0.7 + exp(-d / 7.0) * 0.14;
-          col += mix(cyan, pink, fr / 2.0) * l;
-          a += l;
-        }
+      float edge = smoothstep(0.0, 0.08, uv.x) * smoothstep(1.0, 0.92, uv.x);
+      float e = 2.0 / uRes.x;
+      for (int i = 0; i < ${WAVE_ROWS}; i++) {
+        float fi = float(i);
+        float t = fi / ${WAVE_ROWS - 1}.0;                       // 0 is the live line at the bottom, 1 the oldest at the top
+        float amp = (0.08 + 0.08 * uGain) * mix(1.25, 0.6, t) * edge;
+        float base = 0.06 + 0.66 * pow(t, 0.9) + sin(uv.x * 4.0 + uT * 0.6 + fi * 0.8) * 0.008;
+        if (abs(uv.y - base) > amp + 0.01) continue;
+        float row = (max(fi - uShift, 0.0) + 0.5) / ${WAVE_ROWS}.0;
+        float w0 = wv(uv.x, row);
+        float yl = base + w0 * amp;
+        float slope = (wv(uv.x + e, row) - wv(uv.x - e, row)) * amp / (2.0 * e) * (uRes.y / uRes.x);
+        float d = abs(uv.y - yl) * uRes.y / sqrt(1.0 + slope * slope);   // distance to the line, not just vertically
+        float wpx = mix(2.4, 1.5, t);
+        float l = 1.0 - smoothstep(wpx * 0.5, wpx * 0.5 + 1.2, d);
+        float br = mix(1.0, 0.55, t) * (0.5 + abs(w0) * 0.9 + uGain * 0.4);
+        col += mix(cyan, pink, clamp(t + abs(w0) * 0.3, 0.0, 1.0)) * l * br;
+        a += l * br;
       }
       a = clamp(max(a, max(col.r, max(col.g, col.b))), 0.0, 1.0);
       gl_FragColor = vec4(min(col, vec3(a)), a);
     }
   `;
-  let freqMode = "waterfall";
   class FreqFX {
     constructor(gl, stage) {
       this.gl = gl; this.canvas = stage.canvas;
       this.prog = makeProgram(gl, FULL_VS, FREQ_FS(), ["aPos"]);
-      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uMode", "uShift", "uGain", "uTex"]);
+      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uShift", "uGain", "uTex"]);
       this.buf = fullscreenTriangle(gl);
-      this.hist = new Uint8Array(BANDS * (FREQ_ROWS + 1));
+      this.hist = new Uint8Array(WAVE_N * WAVE_ROWS);
       this.tex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, this.tex);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
@@ -1095,8 +1091,8 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, BANDS, FREQ_ROWS + 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, this.hist);
-      this.w = 2; this.h = 2; this.t = 0; this.lastShift = 0; this.frac = 0;
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, WAVE_N, WAVE_ROWS, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, this.hist);
+      this.w = 2; this.h = 2; this.lastShift = 0; this.frac = 0;
       gl.clearColor(0, 0, 0, 0);
       gl.disable(gl.BLEND);
       gl.disable(gl.DEPTH_TEST);
@@ -1104,19 +1100,15 @@
     dispose() { this.gl.deleteProgram(this.prog); this.gl.deleteBuffer(this.buf); this.gl.deleteTexture(this.tex); }
     pixelScale(q) { return Math.min(devicePixelRatio || 1, 1.25) * q * QUALITY_SCALE[settings.quality]; }
     resize(w, h) { this.w = w; this.h = h; }
-    step(dt, now, t) {
-      this.t = t;
+    step(dt, now) {
       audio.update(now);
-      const H = this.hist;
-      if (now - this.lastShift >= 55) {                      // every ~55 ms the newest row becomes history
-        H.copyWithin(BANDS, 0, BANDS * (FREQ_ROWS - 1));
+      const H = this.hist, wave = audio.wave;
+      if (now - this.lastShift >= 70) {                      // every ~70 ms the live line becomes history
+        H.copyWithin(WAVE_N, 0, WAVE_N * (WAVE_ROWS - 1));
         this.lastShift = now;
       }
-      this.frac = clamp((now - this.lastShift) / 55, 0, 1);
-      for (let b = 0; b < BANDS; b++) {
-        H[b] = audio.bands[b] * 255 + 0.5;                   // row 0 is live
-        H[BANDS * FREQ_ROWS + b] = audio.peaks[b] * 255 + 0.5;
-      }
+      this.frac = clamp((now - this.lastShift) / 70, 0, 1);
+      for (let i = 0; i < WAVE_N; i++) H[i] = clamp(wave[i] * 0.5 + 0.5, 0, 1) * 255 + 0.5;
     }
     busy() { return audio.active(); }
     draw(t) {
@@ -1128,17 +1120,94 @@
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.tex);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BANDS, FREQ_ROWS + 1, gl.LUMINANCE, gl.UNSIGNED_BYTE, this.hist);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, WAVE_N, WAVE_ROWS, gl.LUMINANCE, gl.UNSIGNED_BYTE, this.hist);
       gl.uniform1i(U.uTex, 0);
       gl.uniform2f(U.uRes, this.w, this.h);
       gl.uniform1f(U.uT, t);
-      gl.uniform1f(U.uMode, freqMode === "bars" ? 1 : freqMode === "wave" ? 3 : 2);
       gl.uniform1f(U.uShift, this.frac);
-      gl.uniform1f(U.uGain, audio.active() ? 1 : 0.8);
+      gl.uniform1f(U.uGain, audio.active() ? audio.levels.bass * 0.6 + audio.levels.mid * 0.4 : 0.3);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disableVertexAttribArray(0);
     }
   }
+
+  /* ---- DITHER and HALFTONE: the same drifting field, drawn as dots ------------------ */
+  const DOT_LIB = `
+    uniform vec2 uRes;
+    uniform float uT;
+    uniform vec3 uPtr;
+    uniform vec4 uRip[6];
+    uniform float uScroll;
+    uniform vec3 uInk;
+    uniform vec3 uAcc;
+    uniform vec2 uTone;
+    uniform vec2 uSeed;
+    uniform float uFreq;
+    uniform float uPulse;
+    uniform float uS;
+    ${GLSL_NOISE}
+    float fieldAt(vec2 ps, out float heat) {
+      vec2 p = (ps + vec2(0.0, uScroll)) * uFreq + uSeed;
+      float t = uT * 0.02;
+      float f = fbm(p * 1.7 + vec2(t * 3.0, -t * 2.0));
+      f += 0.3 * fbm(p * 3.6 - vec2(t * 2.2, t * 1.4) + 7.0);
+      vec2 q = ps - uPtr.xy;
+      heat = uPtr.z * 0.22 * exp(-dot(q, q) * 26.0);
+      for (int i = 0; i < 6; i++) {
+        vec4 r = uRip[i];
+        float age = uT - r.z;
+        if (r.w > 0.0 && age >= 0.0) {
+          float d = distance(ps, r.xy) - age * 0.42;
+          heat += r.w * 0.16 * exp(-age * 0.9) * exp(-d * d * 120.0) * cos(d * 26.0);
+        }
+      }
+      return f + heat;
+    }
+    float hotAt(vec2 ps, float heat) {
+      float travel = mod(uT * 0.32, 3.2) - 0.6;
+      float across = ps.x * 0.9 + ps.y * 0.35 - travel;
+      return clamp(abs(heat) * 5.0 + uPulse * exp(-across * across * 38.0), 0.0, 1.0);
+    }
+  `;
+  const DITHER_FS = () => `
+    ${FRAG_PRECISION}
+    ${DOT_LIB}
+    float b2(vec2 p) { return mod(p.x * 2.0 + p.y * 3.0, 4.0); }
+    float bayer4(vec2 c) { return (b2(mod(c, 2.0)) * 4.0 + b2(mod(floor(c / 2.0), 2.0)) + 0.5) / 16.0; }
+    void main() {
+      float cell = max(2.0, 3.0 * uS);                          // one dither dot is about 3 css px
+      vec2 cp = floor(gl_FragCoord.xy / cell);
+      vec2 ps = (cp + 0.5) * cell / uRes.y;
+      float heat;
+      float f = fieldAt(ps, heat);
+      float v = clamp((f - 0.4) / 0.55, 0.0, 1.0);
+      float on = step(bayer4(cp), v * v);
+      float hot = hotAt(ps, heat);
+      float a = on * uTone.y * (0.55 + 0.45 * hot);
+      gl_FragColor = vec4(mix(uInk, uAcc, hot) * a, a);
+    }
+  `;
+  const HALFTONE_FS = () => `
+    ${FRAG_PRECISION}
+    ${DOT_LIB}
+    void main() {
+      float cell = max(5.0, 8.0 * uS);                          // a print-style grid, turned 15 degrees
+      vec2 fc = gl_FragCoord.xy;
+      vec2 q = vec2(0.9659 * fc.x + 0.2588 * fc.y, -0.2588 * fc.x + 0.9659 * fc.y) / cell;
+      vec2 fr = fract(q) - 0.5;
+      vec2 c = (floor(q) + 0.5) * cell;
+      vec2 ps = vec2(0.9659 * c.x - 0.2588 * c.y, 0.2588 * c.x + 0.9659 * c.y) / uRes.y;
+      float heat;
+      float f = fieldAt(ps, heat);
+      float v = clamp((f - 0.3) / 0.6, 0.0, 1.0);
+      float r = 0.12 + 0.4 * v;
+      float aa = 1.0 / cell + 0.04;
+      float disc = 1.0 - smoothstep(r - aa, r, length(fr));
+      float hot = hotAt(ps, heat);
+      float a = disc * uTone.y * (0.7 + 0.5 * hot);
+      gl_FragColor = vec4(mix(uInk, uAcc, hot) * a, a);
+    }
+  `;
 
   const ON_NAVY = { ink: CREAM, minor: 0.10, major: 0.26 };
   const ON_BLACK = { ink: CREAM, minor: 0.11, major: 0.27 };
@@ -1152,28 +1221,33 @@
     const cfg = Object.assign({ frag: RAYS_FS, seed: [0, 0], freq: 1, pulse: 0, trail: false, click: 1.2, scale: (l, q) => (l ? 0.4 : 0.75) * q }, tone, o);
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
   };
+  const dither = (tone, o) => {
+    const cfg = Object.assign({ frag: DITHER_FS, seed: [0, 0], freq: 1, pulse: 0, scroll: 0 }, tone, o);
+    return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
+  };
   const fieldEffects = (tone, o) => ({ contours: contours(tone, o), rays: rays(tone, o) });
 
-  const FIELD = { maxPixels: 1.2e6, busyDt: 24 };            // full-screen fbm shaders: ~40 fps and fewer pixels
+  const FIELD = { maxPixels: 2.0e6 };
   const PROJECT_FIELD = { seed: [4, 2], pulse: 1, scroll: 0.3 };      // projects and experience share it, so they read as one backdrop
   const SLOTS = [
     { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
     { key: "skills",     label: "Skills",     id: "fx-skills",     initial: "contours", opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [0, 0] }) },
-    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, PROJECT_FIELD) },
-    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, PROJECT_FIELD) },
+    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: Object.assign(fieldEffects(ON_CREAM, PROJECT_FIELD), { dither: dither(ON_CREAM, PROJECT_FIELD) }) },
+    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: Object.assign(fieldEffects(ON_CREAM, PROJECT_FIELD), { dither: dither(ON_CREAM, PROJECT_FIELD) }) },
     { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: fieldEffects(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
     { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) },
     // only exists in the Killer Synthwave look (the lab shows it under "Synthwave")
-    { key: "sun",        label: "Scene",      id: "fx-hero-sun",   initial: "sunset",   theme: "synthwave", opts: { maxPixels: 1.2e6, busyDt: 24 }, effects: { sunset } }
+    { key: "sun",        label: "Scene",      id: "fx-hero-sun",   initial: "sunset",   theme: "synthwave", opts: { maxPixels: 1.6e6 }, effects: { sunset } }
   ];
-  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays", sunset: "Sunset" };
+  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays", dither: "Dither", sunset: "Sunset" };
 
   // Everything else the lab can change. The first option is not necessarily the default: `def` is.
   const OPTIONS = [
     { title: "Style", rows: [
       { key: "look", label: "Look", def: "glass", options: [["glass", "Glass"], ["brutalist", "Brutalist"], ["synthwave", "Killer Synthwave"]] },
       { key: "glass", label: "Glass", def: "frosted", options: [["clear", "Clear"], ["frosted", "Frosted"], ["mirror", "Mirror"]] },
-      { key: "tilt", label: "Tilt", def: "off", options: [["off", "Off"], ["on", "On"]] }
+      { key: "tilt", label: "Tilt", def: "off", options: [["off", "Off"], ["on", "On"]] },
+      { key: "layout", label: "Projects", def: "wheel", options: [["wheel", "Roulette"], ["sphere", "Sphere"]] }
     ] },
     { title: "Performance", rows: [
       { key: "motion", label: "Motion", def: "full", options: [["full", "Full"], ["calm", "Calm"], ["still", "Still"]] },
@@ -1182,7 +1256,6 @@
     ] },
     { title: "Synthwave", rows: [
       { key: "sun", label: "Scene", def: "sunset", options: [["sunset", "Sunset"], ["off", "Off"]] },
-      { key: "freq", label: "Lines", def: "waterfall", options: [["waterfall", "Waterfall"], ["bars", "Bars"], ["wave", "Wave"], ["off", "Off"]] },
       { key: "sound", label: "Sound", def: "on", options: [["on", "On"], ["off", "Off"]] },
       { key: "scan", label: "Scanlines", def: "on", options: [["on", "On"], ["off", "Off"]] }
     ] }
@@ -1209,7 +1282,7 @@
     cv.setAttribute("aria-hidden", "true");
     cv.hidden = true;
     document.body.appendChild(cv);
-    freqStage = new Stage(cv, FreqFX, { maxPixels: 1.2e6, busyDt: 24 });
+    freqStage = new Stage(cv, FreqFX, { maxPixels: 1.6e6 });
     return freqStage;
   }
 
@@ -1235,12 +1308,12 @@
     html.classList.toggle("fx-glass-mirror", choice.glass === "mirror");
     html.classList.toggle("fx-tilt", choice.tilt === "on");
     html.classList.toggle("fx-no-scan", choice.scan === "off");
+    html.classList.toggle("fx-sphere", choice.layout === "sphere");
 
     const quality = settings.quality, motion = settings.motion;
     settings.quality = choice.quality;
     settings.motion = choice.motion;
     settings.cursor = choice.cursor;
-    freqMode = choice.freq;
 
     SLOTS.forEach((sl) => {
       if (!sl.stage) return;
@@ -1253,7 +1326,7 @@
     if (isSynth()) {
       audio.setMuted(choice.sound === "off");
       audio.start();
-      if (choice.freq !== "off") ensureFreqStage().setOn(true); else if (freqStage) freqStage.setOn(false);
+      ensureFreqStage().setOn(true);
     } else {
       audio.stop();
       if (freqStage) freqStage.setOn(false);
