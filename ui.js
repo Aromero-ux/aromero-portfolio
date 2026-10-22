@@ -4,19 +4,14 @@
    - the navbar blends from its full size to a slim one as you scroll (styles.css
      does the blending; this only reports how far down you are, as --p)
    - exactly one nav link is "active": the section you are reading
-   - the glass look (switched in the effects lab) gets a sheen that follows the
-     cursor and a reveal as cards scroll into view
+   - the glass look gets a sheen that follows the cursor (and an optional tilt),
+     plus a reveal as cards scroll into view
    ========================================================================== */
 (() => {
   "use strict";
 
   const root = document.documentElement;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-  // The glass look is remembered; apply it straight away so the page never flashes the other style.
-  try {
-    if (JSON.parse(localStorage.getItem("portfolio-fx-v3") || "{}").look === "glass") root.classList.add("fx-glass");
-  } catch (e) { /* storage unavailable */ }
 
   /* ---- Navbar ----------------------------------------------------------- */
   const nav = document.querySelector(".site-nav");
@@ -44,6 +39,7 @@
   }
 
   function sectionInView() {
+    if (!targets.length) return null;
     const line = innerHeight * 0.32;       // the section whose top has passed this line is the one being read
     let found = null;
     targets.forEach((el) => { if (el.getBoundingClientRect().top <= line) found = el.id; });
@@ -95,12 +91,22 @@
     const el = e.target.closest && e.target.closest(".glass-card");
     if (!el) return;
     const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    el.style.setProperty("--mx", `${x}px`);
+    el.style.setProperty("--my", `${y}px`);
+    if (root.classList.contains("fx-tilt") && !el.classList.contains("roulette-card")) {
+      el.style.setProperty("--ry", `${((x / r.width - 0.5) * 9).toFixed(2)}deg`);
+      el.style.setProperty("--rx", `${((0.5 - y / r.height) * 7).toFixed(2)}deg`);
+    }
   }, { passive: true });
+  document.addEventListener("pointerout", (e) => {
+    const el = e.target.closest && e.target.closest(".glass-card");
+    if (el && !el.contains(e.relatedTarget)) { el.style.removeProperty("--rx"); el.style.removeProperty("--ry"); }
+  });
 
   // Cards are marked as seen in both looks, so switching to glass never hides a card you are looking at.
   if ("IntersectionObserver" in window) {
+    root.classList.add("fx-reveal");
     const seen = new IntersectionObserver((entries) => {
       entries.forEach((en) => {
         if (en.isIntersecting) { en.target.classList.add("is-in"); seen.unobserve(en.target); }

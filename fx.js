@@ -11,38 +11,25 @@
   const lite = () => liteMQ.matches;
   const sideLayout = () => innerWidth >= 1100;           
 
-  /* ---- Theme Audio ------------------------------------------------------- */
-  // Auto-plays royalty-free synthwave track when the theme is selected
-  const themeAudio = new Audio('assets/hackers.mp3');
-  themeAudio.loop = true;
-
-  // Restore audio playback position seamlessly across pages
-  const savedTime = sessionStorage.getItem('killerAudioTime');
-  if (savedTime) {
-    themeAudio.currentTime = parseFloat(savedTime);
-  }
-
-  // Save the exact timestamp before the user navigates to another page
-  addEventListener('beforeunload', () => {
-    if (document.documentElement.classList.contains('fx-killer') && !themeAudio.paused) {
-      sessionStorage.setItem('killerAudioTime', themeAudio.currentTime);
-    } else {
-      sessionStorage.removeItem('killerAudioTime');
-    }
-  });
+  /* ---- Settings (switched in the effects lab) ---------------------------- */
+  const settings = { motion: "full", quality: "auto", cursor: "on" };
+  const QUALITY_SCALE = { low: 0.6, auto: 1, high: 1.25 };
+  const QUALITY_BUDGET = { low: 0.45, auto: 1, high: 1.8 };
+  const html = document.documentElement;
+  const isSynth = () => html.classList.contains("fx-synthwave");
 
   /* ---- Palette (matches the site) -------------------------------------- */
-  const ORANGE = [0.996, 0.498, 0.176];  
-  const CREAM = [0.918, 0.925, 0.941];   
-  
-  // Killer Frequency Palette
-  const KILLER_PINK = [1.0, 0.0, 0.498]; // #ff007f
-  const KILLER_CYAN = [0.0, 0.898, 1.0]; // #00e5ff
+  const ORANGE = [0.996, 0.498, 0.176];
+  const CREAM = [0.918, 0.925, 0.941];
+
+  // Killer Synthwave palette
+  const SYNTH_PINK = [1.0, 0.0, 0.498];   // #ff007f
+  const SYNTH_CYAN = [0.0, 0.898, 1.0];   // #00e5ff
 
   /* ---- Pointer (shared) ------------------------------------------------- */
   const P = { x: 0, y: 0, seen: false, last: 0 };
   const stages = [];
-  const pointerActive = (now) => P.seen && now - P.last < 2600;
+  const pointerActive = (now) => settings.cursor === "on" && P.seen && now - P.last < 2600;
 
   addEventListener("pointermove", (e) => {
     if (e.pointerType === "touch") return;
@@ -50,7 +37,8 @@
   }, { passive: true });
   addEventListener("pointerdown", (e) => {
     P.x = e.clientX; P.y = e.clientY; P.last = performance.now();
-    stages.forEach((s) => s.on && s.visible && s.fx && s.fx.click(e.clientX, e.clientY));
+    if (settings.cursor !== "on") return;
+    stages.forEach((s) => s.on && s.visible && s.fx && s.fx.click && s.fx.click(e.clientX, e.clientY));
   }, { passive: true });
   let lastScroll = 0;
   addEventListener("scroll", () => { lastScroll = performance.now(); }, { passive: true });
@@ -147,6 +135,146 @@
   /* ======================================================================
      STAGE
      ====================================================================== */
+  /* ---- Shared clock: every canvas reads the same time, so neighbouring effects line up ---- */
+  let clockT = 3, clockLast = 0;
+  const clock = (now) => {
+    if (clockLast && now > clockLast) clockT += (Math.min(now - clockLast, 100) / 1000) * (settings.motion === "calm" ? 0.4 : 1);
+    clockLast = now;
+    return clockT;
+  };
+
+  /* ---- Sound: the Killer Synthwave track, and the numbers the visuals listen to ---------------
+     The audio is only created when the theme is switched on. Where the browser allows it
+     (any http/https page) a Web Audio analyser reads the real spectrum; on file:// pages the
+     browser silences analysed audio, so the track plays untouched and the visuals use a
+     simulated beat instead. */
+  const BANDS = 64;
+  const audio = (() => {
+    const SRC = "assets/hackers.mp3";
+    const TIME_KEY = "synthwaveAudioTime";
+    const levels = { bass: 0, mid: 0, treble: 0, beat: 0 };
+    const bands = new Float32Array(BANDS);
+    const peaks = new Float32Array(BANDS);
+    const ranges = [];
+    const analysable = location.protocol !== "file:";
+    let el = null, ctx = null, analyser = null, gain = null, bins = null;
+    let wanted = false, muted = false, armed = false, lastNow = -1, slowBass = 0;
+
+    const ensure = () => {
+      if (el) return;
+      el = new Audio(SRC);
+      el.loop = true;
+      el.preload = "auto";
+      try { const t = parseFloat(sessionStorage.getItem(TIME_KEY)); if (t > 0) el.currentTime = t; } catch (e) { }
+    };
+
+    const graph = () => {
+      if (ctx || !analysable) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        ctx = new AC();
+        const src = ctx.createMediaElementSource(el);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.72;
+        gain = ctx.createGain();
+        gain.gain.value = muted ? 0 : 1;
+        src.connect(analyser);
+        analyser.connect(gain);
+        gain.connect(ctx.destination);
+        bins = new Uint8Array(analyser.frequencyBinCount);
+        const top = Math.floor(bins.length * 0.74);          // up to ~16 kHz, log-spaced bands
+        for (let b = 0; b < BANDS; b++) {
+          const lo = Math.max(1, Math.round(Math.exp((Math.log(top) * b) / BANDS)));
+          const hi = Math.max(lo + 1, Math.round(Math.exp((Math.log(top) * (b + 1)) / BANDS)));
+          ranges.push([lo, hi]);
+        }
+      } catch (e) {
+        if (ctx && ctx.close) ctx.close();
+        ctx = analyser = gain = bins = null;
+      }
+    };
+
+    // Browsers block sound until the visitor interacts: try again on the first click, key press or tap.
+    const unlock = () => {
+      if (armed) return;
+      armed = true;
+      const events = ["pointerdown", "keydown", "touchstart"];
+      const go = () => { events.forEach((t) => removeEventListener(t, go, true)); armed = false; if (wanted) start(); };
+      events.forEach((t) => addEventListener(t, go, true));
+    };
+
+    function start() {
+      wanted = true;
+      ensure();
+      graph();
+      if (ctx && ctx.state === "suspended") ctx.resume().catch(() => { });
+      el.muted = !ctx && muted;
+      const p = el.play();
+      if (p && p.catch) p.catch(unlock);
+    }
+    const stop = () => {
+      wanted = false;
+      if (el) { el.pause(); el.currentTime = 0; }
+      try { sessionStorage.removeItem(TIME_KEY); } catch (e) { }
+    };
+    const setMuted = (m) => {
+      muted = m;
+      if (gain) gain.gain.value = m ? 0 : 1;      // the analyser sits before the gain: muted, the lines still follow the song
+      else if (el) el.muted = m;
+    };
+
+    // keep the song position across pages, and do not play into a background tab
+    addEventListener("pagehide", () => {
+      try {
+        if (wanted && el && !el.paused) sessionStorage.setItem(TIME_KEY, String(el.currentTime));
+        else sessionStorage.removeItem(TIME_KEY);
+      } catch (e) { }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!el || !wanted) return;
+      if (document.hidden) el.pause(); else start();
+    });
+
+    const active = () => !!el && !el.paused;
+
+    // once per frame: refresh bands, peaks and the bass / mid / treble / beat levels
+    function update(now) {
+      if (now === lastNow) return;
+      lastNow = now;
+      const playing = active();
+      for (let b = 0; b < BANDS; b++) {
+        let v;
+        if (playing && analyser) {
+          analyser.getByteFrequencyData(bins);
+          let sum = 0;
+          const r = ranges[b];
+          for (let i = r[0]; i < r[1]; i++) sum += bins[i];
+          v = Math.min(1, Math.pow(sum / (r[1] - r[0]) / 255, 1.15) * (1 + (0.9 * b) / BANDS));
+        } else if (playing) {                                  // no analysis available (file://): a believable beat instead
+          const ph = el.currentTime * 2;
+          const kick = Math.pow(Math.max(0, 1 - (ph % 1) * 3.5), 2);
+          const hat = Math.pow(Math.max(0, 1 - ((ph * 2 + 0.5) % 1) * 4), 2);
+          const x = b / BANDS;
+          v = 0.22 * Math.exp(-x * 3) + kick * 0.85 * Math.exp(-x * 5) + hat * 0.5 * x + 0.14 * (0.5 + 0.5 * Math.sin(el.currentTime * (2 + b * 0.37) + b));
+          v = Math.min(1, v);
+        } else {                                               // nothing playing: a slow breath
+          v = 0.05 + 0.035 * (0.5 + 0.5 * Math.sin(now * 0.0011 + b * 0.35));
+        }
+        bands[b] = v > bands[b] ? bands[b] + (v - bands[b]) * 0.6 : bands[b] * 0.88 + v * 0.12;
+        peaks[b] = Math.max(bands[b], peaks[b] - 0.012);
+      }
+      const mean = (a, z) => { let t = 0; for (let i = a; i < z; i++) t += bands[i]; return t / (z - a); };
+      levels.bass = Math.min(1, mean(0, 14) * 1.3);
+      levels.mid = Math.min(1, mean(14, 41) * 1.3);
+      levels.treble = Math.min(1, mean(41, BANDS) * 1.5);
+      slowBass += (levels.bass - slowBass) * 0.04;
+      levels.beat = Math.max(levels.beat * 0.88, Math.min(1, Math.max(0, (levels.bass - slowBass) * 3.2)));
+    }
+
+    return { start, stop, setMuted, update, active, levels, bands, peaks };
+  })();
+
   class Stage {
     constructor(canvas, Effect, opts) {
       this.canvas = canvas; this.Effect = Effect; this.opts = opts || {};
@@ -207,7 +335,7 @@
       if (!this.init()) { this.on = false; return; }
       if (!this.sized) this.resize();
       if (!this.sized) return;                  
-      if (reduce.matches) { this.stop(); this.renderStill(); return; }
+      if (reduce.matches || settings.motion === "still") { this.stop(); this.renderStill(); return; }
       if (!this.raf) { this.lastRender = performance.now(); this.raf = requestAnimationFrame(this.tick); }
     }
     setEffect(Effect) {
@@ -229,14 +357,14 @@
       const cssW = this.canvas.clientWidth, cssH = this.canvas.clientHeight;
       if (!cssW || !cssH) return;
       let s = this.fx.pixelScale(this.quality);
-      const budget = this.opts.maxPixels;                       
+      const budget = this.opts.maxPixels ? this.opts.maxPixels * QUALITY_BUDGET[settings.quality] : 0;     // cap the pixels on big screens
       if (budget && cssW * cssH * s * s > budget) s = Math.sqrt(budget / (cssW * cssH));
       const w = Math.max(2, Math.round(cssW * s)), h = Math.max(2, Math.round(cssH * s));
       if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
       this.gl.viewport(0, 0, w, h);
       this.fx.resize(w, h, cssW, cssH, s);
       this.sized = true;
-      if (!this.raf && this.on && this.visible && reduce.matches) this.renderStill();
+      if (!this.raf && this.on && this.visible && (reduce.matches || settings.motion === "still")) this.renderStill();
     }
 
     renderStill() {
@@ -251,10 +379,11 @@
       this.raf = requestAnimationFrame(this.tick);
       if (!this.fx) return;
       const busy = this.fx.busy(now);
-      if (now - this.lastRender < (busy ? 14 : lite() ? 42 : 31)) return;   
+      const minDt = settings.motion === "calm" ? 33 : busy ? 14 : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
+      if (now - this.lastRender < minDt) return;
       const dt = Math.min((now - this.lastRender) / 1000, 0.1);
       this.lastRender = now;
-      this.t += dt;
+      this.t = clock(now);
       this.fx.step(dt, now, this.t, false);
       this.fx.draw(this.t);
       this.markLive();
@@ -474,7 +603,7 @@
       gl.bufferData(gl.ARRAY_BUFFER, seeds, gl.STATIC_DRAW);
     }
 
-    pixelScale(q) { return Math.min(devicePixelRatio || 1, lite() ? 1.5 : 2) * q; }
+    pixelScale(q) { return Math.min(devicePixelRatio || 1, lite() ? 1.5 : 2) * q * QUALITY_SCALE[settings.quality]; }
 
     layout() {
       const side = sideLayout();
@@ -530,10 +659,9 @@
       mul(this.model, this.m1, this.m2);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // Check if the Killer Frequency Theme is active
-      const isKiller = document.documentElement.classList.contains("fx-killer");
-      const baseCol = isKiller ? KILLER_PINK : ORANGE;
-      const hiCol = isKiller ? KILLER_CYAN : CREAM;
+      const synth = isSynth();
+      const baseCol = synth ? SYNTH_CYAN : ORANGE;
+      const hiCol = synth ? SYNTH_PINK : CREAM;
 
       gl.useProgram(this.lineProg);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuf);
@@ -589,7 +717,7 @@
       this.gl = gl; this.canvas = stage.canvas; this.cfg = cfg;
       const deriv = !!gl.getExtension("OES_standard_derivatives");
       this.prog = makeProgram(gl, FULL_VS, cfg.frag(deriv), ["aPos"]);
-      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uPtr", "uRip", "uScroll", "uInk", "uAcc", "uTone", "uSeed", "uFreq", "uPulse", "uLinePx", "uS"]);
+      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uPtr", "uRip", "uScroll", "uInk", "uAcc", "uTone", "uSeed", "uFreq", "uPulse", "uLinePx", "uS"].concat(cfg.uniforms || []));
       this.buf = fullscreenTriangle(gl);
       this.rip = makeRipples(6);
       this.ptr = { x: 0.5, y: 0.5, amp: 0 };
@@ -601,8 +729,9 @@
     }
     dispose() { this.gl.deleteProgram(this.prog); this.gl.deleteBuffer(this.buf); }
     pixelScale(q) {
-      if (this.cfg.scale) return this.cfg.scale(lite(), q);
-      return (lite() ? 0.6 : Math.min(devicePixelRatio || 1, 1.5)) * q;
+      const qs = QUALITY_SCALE[settings.quality];
+      if (this.cfg.scale) return this.cfg.scale(lite(), q) * qs;
+      return (lite() ? 0.6 : Math.min(devicePixelRatio || 1, settings.quality === "high" ? 2 : 1.5)) * q * qs;
     }
     resize(w, h, cssW, cssH, s) { this.w = w; this.h = h; this.cssW = cssW; this.cssH = cssH; this.s = s; }
 
@@ -610,6 +739,7 @@
 
     step(dt, now, t, still) {
       this.t = t;
+      if (this.cfg.audio) audio.update(now);
       const k = (rate) => 1 - Math.exp(-dt * rate);
       const lp = still || lite() ? null : localPointer(this.canvas, now, true);
       let ampT = 0;
@@ -630,7 +760,7 @@
     }
     busy(now) {
       return (!lite() && pointerActive(now)) || this.ptr.amp > 0.02 || this.t < this.rip.end ||
-        (!!this.cfg.scroll && scrolling(now));
+        (!!this.cfg.scroll && scrolling(now)) || (!!this.cfg.audio && audio.active());
     }
     click(cx, cy) {
       const r = hit(this.canvas, cx, cy, 0);
@@ -651,14 +781,13 @@
       gl.uniform4fv(U.uRip, this.rip.a);
       gl.uniform1f(U.uScroll, c.scroll ? (window.scrollY * c.scroll) / this.cssH : 0);
       
-      // Override colors for the Killer theme
-      const isKiller = document.documentElement.classList.contains("fx-killer");
+      const synth = isSynth();
       let ink = c.ink;
       let acc = ORANGE;
 
-      if (isKiller) {
-        ink = KILLER_CYAN; 
-        acc = KILLER_PINK;
+      if (synth) {
+        ink = SYNTH_CYAN; 
+        acc = SYNTH_PINK;
       }
 
       gl.uniform3f(U.uInk, ink[0], ink[1], ink[2]);
@@ -669,6 +798,7 @@
       gl.uniform1f(U.uPulse, c.pulse);
       gl.uniform1f(U.uLinePx, 1.0667 * this.s);      
       gl.uniform1f(U.uS, this.s);
+      if (c.extra) c.extra(gl, U, this);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disableVertexAttribArray(0);
     }
@@ -778,6 +908,238 @@
     }
   `;
 
+  /* ---- SYNTHWAVE SUNSET: the hero scene (sun, mountains, neon grid) in one shader ---------- */
+  const SUNSET_FS = (deriv) => `
+    ${deriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
+    ${FRAG_PRECISION}
+    uniform vec2 uRes;
+    uniform float uT;
+    uniform vec3 uPtr;
+    uniform vec4 uRip[6];
+    uniform vec4 uAudio;                                     // bass, mid, treble, beat
+    ${GLSL_NOISE}
+    void main() {
+      vec2 frag = gl_FragCoord.xy;
+      float asp = uRes.x / uRes.y;
+      vec2 uv = frag / uRes;
+      float px = 1.0 / uRes.y;
+      float bass = uAudio.x, mid = uAudio.y, treb = uAudio.z, beat = uAudio.w;
+      float energy = (bass + mid + treb) / 3.0;
+      float horizon = 0.30;
+      vec2 par = (uPtr.xy - vec2(0.5 * asp, 0.5)) * uPtr.z;  // a hint of parallax toward the cursor
+
+      float pulse = 0.0;                                     // a click makes the scene flare
+      for (int i = 0; i < 6; i++) {
+        vec4 r = uRip[i];
+        float age = uT - r.z;
+        if (r.w > 0.0 && age >= 0.0) pulse += r.w * exp(-age * 2.2);
+      }
+      pulse = min(pulse, 1.5);
+
+      // the perspective grid, evaluated everywhere so its derivatives stay valid
+      float y = horizon - uv.y;
+      float zf = 0.06 / max(y, 0.0015);
+      float speed = 0.9 + energy * 1.6 + beat * 0.6;
+      vec2 g = vec2((uv.x - 0.5) * asp * zf * 34.0, zf * 20.0 + uT * speed);
+      ${deriv ? "float wx = max(fwidth(g.x), 1e-4); float wz = max(fwidth(g.y), 1e-4);" : "float wx = 0.05; float wz = 0.05;"}
+
+      vec3 col;
+      if (uv.y >= horizon) {
+        float h = (uv.y - horizon) / (1.0 - horizon);
+        col = mix(vec3(0.82, 0.07, 0.46), vec3(0.17, 0.02, 0.31), smoothstep(0.0, 0.38, h));
+        col = mix(col, vec3(0.02, 0.015, 0.06), smoothstep(0.28, 1.0, h));
+
+        vec2 sc = frag / uRes.y * 55.0;                      // twinkling stars
+        vec2 si = floor(sc);
+        float sh = hash(si);
+        float star = step(0.978, sh) * (1.0 - smoothstep(0.0, 0.14 + sh * 0.1, length(fract(sc) - 0.5)));
+        float tw = 0.55 + 0.45 * sin(uT * (1.5 + sh * 4.0) + sh * 40.0);
+        col += vec3(0.8, 0.9, 1.0) * star * tw * smoothstep(0.25, 0.7, h) * (0.55 + treb * 1.3);
+
+        float R = 0.27 * (1.0 + 0.035 * bass + 0.05 * beat + 0.04 * pulse);   // the sun
+        vec2 sunC = vec2(0.76 * asp + par.x * 0.02, horizon + R * 0.48 + par.y * 0.01);
+        vec2 q = vec2(uv.x * asp, uv.y) - sunC;
+        float d = length(q);
+        float disc = 1.0 - smoothstep(R - 1.5 * px, R, d);
+        float sy = clamp((q.y + R) / (2.0 * R), 0.0, 1.0);
+        vec3 sunCol = mix(vec3(1.0, 0.05, 0.50), vec3(1.0, 0.42, 0.12), smoothstep(0.0, 0.5, sy));
+        sunCol = mix(sunCol, vec3(1.0, 0.86, 0.28), smoothstep(0.42, 1.0, sy));
+        float below = clamp(-q.y / R, 0.0, 1.0);             // the cut-out stripes, widening toward the bottom
+        float f = fract(below * 14.0 - uT * 0.35 - beat * 0.15);
+        float vis = smoothstep(0.10 + 0.62 * below, 0.15 + 0.62 * below, f);
+        disc *= mix(1.0, vis, smoothstep(0.0, 0.06, below));
+        col += vec3(1.0, 0.25, 0.60) * exp(-max(d - R, 0.0) * 5.5) * (0.40 + 0.55 * energy + 0.3 * beat);
+        col = mix(col, sunCol * (0.9 + 0.35 * bass + 0.2 * pulse), disc);
+
+        float away = smoothstep(0.05, 0.55, abs(uv.x - 0.76));   // mountains, lowest in front of the sun
+        float ridge = horizon + 0.006 + (0.012 + 0.065 * away) * (0.4 + 1.2 * fbm(vec2(uv.x * asp * 2.1 + 7.0 + par.x * 0.4, 1.3)));
+        col = mix(col, vec3(0.035, 0.008, 0.075), 1.0 - smoothstep(ridge - px, ridge + px, uv.y));
+        float rim = (1.0 - smoothstep(0.0, 2.2 * px, abs(uv.y - ridge)));
+        col += vec3(0.0, 0.85, 1.0) * rim * (0.22 + 0.4 * mid);
+      } else {
+        col = mix(vec3(0.01, 0.0, 0.04), vec3(0.17, 0.0, 0.26), exp(-y * 7.0));
+        float dx = abs(fract(g.x) - 0.5);
+        float dz = abs(fract(g.y) - 0.5);
+        float lx = 1.0 - smoothstep(0.0, wx * 1.5, 0.5 - dx);
+        float lz = 1.0 - smoothstep(0.0, wz * 1.5, 0.5 - dz);
+        float fade = smoothstep(0.0, 0.16, y);
+        float bright = 0.5 + 0.9 * bass + 0.8 * beat + 0.3 * pulse;
+        col += vec3(0.0, 0.9, 1.0) * lz * bright * fade;
+        col += vec3(1.0, 0.10, 0.60) * lx * bright * fade;
+        float glow = (1.0 - smoothstep(0.0, wx * 6.0, 0.5 - dx)) * 0.10 + (1.0 - smoothstep(0.0, wz * 6.0, 0.5 - dz)) * 0.10;
+        col += vec3(0.6, 0.1, 0.9) * glow * fade * bright;
+        col += vec3(1.0, 0.1, 0.55) * exp(-abs(uv.x - 0.76) * 3.2) * exp(-y * 5.0) * 0.28 * (0.5 + energy);   // the sun's reflection
+      }
+
+      float hz = abs(uv.y - horizon);                         // glowing horizon line
+      col += vec3(1.0, 0.30, 0.70) * exp(-hz * 120.0) * (0.42 + 0.6 * bass + 0.45 * beat);
+      col += vec3(1.0, 0.85, 0.95) * exp(-hz * 420.0) * 0.6;
+      col *= 1.0 - 0.38 * length((uv - 0.5) * vec2(0.9, 0.8));
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+  const sunset = (() => {
+    const cfg = {
+      frag: SUNSET_FS, ink: CREAM, minor: 0, major: 0, seed: [0, 0], freq: 1, pulse: 0, audio: true, trail: false, click: 1.0,
+      scale: (l, q) => (l ? 0.5 : Math.min(devicePixelRatio || 1, 1.25)) * q,
+      uniforms: ["uAudio"],
+      extra: (gl, U) => gl.uniform4f(U.uAudio, audio.levels.bass, audio.levels.mid, audio.levels.treble, audio.levels.beat)
+    };
+    return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
+  })();
+
+  /* ---- FREQUENCY LINES: a page-wide, audio-reactive overlay (bars, waterfall or wave) ------ */
+  const FREQ_ROWS = 24;
+  const FREQ_FS = () => `
+    ${FRAG_PRECISION}
+    uniform vec2 uRes;
+    uniform float uT;
+    uniform float uMode;
+    uniform float uShift;
+    uniform float uGain;
+    uniform sampler2D uTex;
+    const float H = ${FREQ_ROWS + 1}.0;                      // history rows plus one row of peak-hold values
+    float spec(float x, float row) { return texture2D(uTex, vec2(x, (row + 0.5) / H)).r; }
+    void main() {
+      vec2 uv = gl_FragCoord.xy / uRes;
+      float pxy = 1.0 / uRes.y;
+      vec3 pink = vec3(1.0, 0.0, 0.5);
+      vec3 cyan = vec3(0.0, 0.9, 1.0);
+      vec3 col = vec3(0.0);
+      float a = 0.0;
+
+      if (uMode < 1.5) {                                      // BARS: an equalizer along the bottom edge
+        float N = 80.0;
+        float cx = (floor(uv.x * N) + 0.5) / N;
+        float v = spec(cx, 0.0);
+        float hgt = v * 0.34 * uGain;
+        float dxp = abs(uv.x - cx) * uRes.x;
+        float w = max(1.0, uRes.x / N * 0.14);
+        float inBar = 1.0 - smoothstep(w * 0.5, w * 0.5 + 1.0, dxp);
+        float top = smoothstep(hgt + 1.5 * pxy, hgt - 1.5 * pxy, uv.y);
+        vec3 c = mix(cyan, pink, clamp(uv.y / 0.34, 0.0, 1.0));
+        float body = inBar * top * (0.22 + 0.5 * v);
+        float glow = exp(-dxp / (w * 2.4)) * top * 0.09;
+        float capY = spec(cx, H - 1.0) * 0.34 * uGain + 0.007;
+        float cap = inBar * (1.0 - smoothstep(0.0, 2.2 * pxy, abs(uv.y - capY))) * 0.75;
+        col = c * (body + glow) + vec3(cap);
+        a = body + glow + cap;
+      } else if (uMode < 2.5) {                               // WATERFALL: stacked lines, the song scrolling away
+        for (int i = 0; i < 16; i++) {
+          float fi = float(i);
+          float t = fi / 15.0;
+          float base = 0.07 + 0.60 * pow(t, 0.9);
+          float amp = spec(uv.x, max(fi - uShift, 0.0));
+          float edge = smoothstep(0.0, 0.1, uv.x) * smoothstep(1.0, 0.9, uv.x);
+          float yl = base + amp * edge * uGain * mix(0.17, 0.07, t);
+          float d = abs(uv.y - yl) / pxy;
+          float wpx = mix(2.2, 1.4, t);
+          float l = 1.0 - smoothstep(wpx * 0.5, wpx * 0.5 + 1.2, d);
+          float br = mix(1.0, 0.5, t) * (0.42 + amp * 1.3);
+          col += mix(cyan, pink, clamp(t + amp * 0.35, 0.0, 1.0)) * l * br;
+          a += l * br;
+        }
+      } else {                                                // WAVE: three ribbons whose shape is the spectrum
+        float ak[8];
+        for (int k = 0; k < 8; k++) ak[k] = spec((float(k) + 0.5) / 8.0, 0.0);
+        for (int r = 0; r < 3; r++) {
+          float fr = float(r);
+          float yw = 0.0;
+          for (int k = 0; k < 8; k++) {
+            float fk = float(k);
+            yw += ak[k] * sin(uv.x * (5.0 + fk * 3.1) + uT * (0.7 + fk * 0.23) + fk * 1.9 + fr * 1.3) / (1.0 + fk * 0.35);
+          }
+          float yl = 0.2 + fr * 0.3 + yw * 0.07 * uGain + sin(uv.x * 3.0 + uT * 0.5 + fr) * 0.012;
+          float d = abs(uv.y - yl) / pxy;
+          float l = (1.0 - smoothstep(0.8, 2.2, d)) * 0.7 + exp(-d / 7.0) * 0.14;
+          col += mix(cyan, pink, fr / 2.0) * l;
+          a += l;
+        }
+      }
+      a = clamp(max(a, max(col.r, max(col.g, col.b))), 0.0, 1.0);
+      gl_FragColor = vec4(min(col, vec3(a)), a);
+    }
+  `;
+  let freqMode = "waterfall";
+  class FreqFX {
+    constructor(gl, stage) {
+      this.gl = gl; this.canvas = stage.canvas;
+      this.prog = makeProgram(gl, FULL_VS, FREQ_FS(), ["aPos"]);
+      this.U = getUniforms(gl, this.prog, ["uRes", "uT", "uMode", "uShift", "uGain", "uTex"]);
+      this.buf = fullscreenTriangle(gl);
+      this.hist = new Uint8Array(BANDS * (FREQ_ROWS + 1));
+      this.tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, this.tex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, BANDS, FREQ_ROWS + 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, this.hist);
+      this.w = 2; this.h = 2; this.t = 0; this.lastShift = 0; this.frac = 0;
+      gl.clearColor(0, 0, 0, 0);
+      gl.disable(gl.BLEND);
+      gl.disable(gl.DEPTH_TEST);
+    }
+    dispose() { this.gl.deleteProgram(this.prog); this.gl.deleteBuffer(this.buf); this.gl.deleteTexture(this.tex); }
+    pixelScale(q) { return Math.min(devicePixelRatio || 1, 1.25) * q * QUALITY_SCALE[settings.quality]; }
+    resize(w, h) { this.w = w; this.h = h; }
+    step(dt, now, t) {
+      this.t = t;
+      audio.update(now);
+      const H = this.hist;
+      if (now - this.lastShift >= 55) {                      // every ~55 ms the newest row becomes history
+        H.copyWithin(BANDS, 0, BANDS * (FREQ_ROWS - 1));
+        this.lastShift = now;
+      }
+      this.frac = clamp((now - this.lastShift) / 55, 0, 1);
+      for (let b = 0; b < BANDS; b++) {
+        H[b] = audio.bands[b] * 255 + 0.5;                   // row 0 is live
+        H[BANDS * FREQ_ROWS + b] = audio.peaks[b] * 255 + 0.5;
+      }
+    }
+    busy() { return audio.active(); }
+    draw(t) {
+      const gl = this.gl, U = this.U;
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(this.prog);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.tex);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BANDS, FREQ_ROWS + 1, gl.LUMINANCE, gl.UNSIGNED_BYTE, this.hist);
+      gl.uniform1i(U.uTex, 0);
+      gl.uniform2f(U.uRes, this.w, this.h);
+      gl.uniform1f(U.uT, t);
+      gl.uniform1f(U.uMode, freqMode === "bars" ? 1 : freqMode === "wave" ? 3 : 2);
+      gl.uniform1f(U.uShift, this.frac);
+      gl.uniform1f(U.uGain, audio.active() ? 1 : 0.8);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disableVertexAttribArray(0);
+    }
+  }
+
   const ON_NAVY = { ink: CREAM, minor: 0.10, major: 0.26 };
   const ON_BLACK = { ink: CREAM, minor: 0.11, major: 0.27 };
   const ON_CREAM = { ink: BLACK, minor: 0.10, major: 0.26 };
@@ -793,62 +1155,138 @@
   const fieldEffects = (tone, o) => ({ contours: contours(tone, o), rays: rays(tone, o) });
 
   const FIELD = { maxPixels: 2.0e6 };
+  const PROJECT_FIELD = { seed: [4, 2], pulse: 1, scroll: 0.3 };      // projects and experience share it, so they read as one backdrop
   const SLOTS = [
     { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
     { key: "skills",     label: "Skills",     id: "fx-skills",     initial: "contours", opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [0, 0] }) },
-    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, { seed: [4, 2], pulse: 1, scroll: 0.3 }) },
-    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, { seed: [9, 6], freq: 1.25, pulse: 1, scroll: 0.3 }) },
+    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, PROJECT_FIELD) },
+    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: fieldEffects(ON_CREAM, PROJECT_FIELD) },
     { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: fieldEffects(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
-    { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) }
+    { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) },
+    // only exists in the Killer Synthwave look (the lab shows it under "Synthwave")
+    { key: "sun",        label: "Scene",      id: "fx-hero-sun",   initial: "sunset",   theme: "synthwave", opts: { maxPixels: 1.6e6 }, effects: { sunset } }
   ];
-  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays" };
+  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays", sunset: "Sunset" };
 
-  const STORE = "portfolio-fx-v3";
+  // Everything else the lab can change. The first option is not necessarily the default: `def` is.
+  const OPTIONS = [
+    { title: "Style", rows: [
+      { key: "look", label: "Look", def: "glass", options: [["glass", "Glass"], ["brutalist", "Brutalist"], ["synthwave", "Killer Synthwave"]] },
+      { key: "glass", label: "Glass", def: "frosted", options: [["clear", "Clear"], ["frosted", "Frosted"], ["mirror", "Mirror"]] },
+      { key: "tilt", label: "Tilt", def: "off", options: [["off", "Off"], ["on", "On"]] }
+    ] },
+    { title: "Performance", rows: [
+      { key: "motion", label: "Motion", def: "full", options: [["full", "Full"], ["calm", "Calm"], ["still", "Still"]] },
+      { key: "quality", label: "Quality", def: "auto", options: [["low", "Low"], ["auto", "Auto"], ["high", "High"]] },
+      { key: "cursor", label: "Cursor", def: "on", options: [["on", "On"], ["off", "Off"]] }
+    ] },
+    { title: "Synthwave", rows: [
+      { key: "sun", label: "Scene", def: "sunset", options: [["sunset", "Sunset"], ["off", "Off"]] },
+      { key: "freq", label: "Lines", def: "waterfall", options: [["waterfall", "Waterfall"], ["bars", "Bars"], ["wave", "Wave"], ["off", "Off"]] },
+      { key: "sound", label: "Sound", def: "on", options: [["on", "On"], ["off", "Off"]] },
+      { key: "scan", label: "Scanlines", def: "on", options: [["on", "On"], ["off", "Off"]] }
+    ] }
+  ];
+
+  // choices survive a reload (and carry over to the other pages); anything unknown falls back to the default
+  const STORE = "portfolio-fx-v4";
   let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { }
+  try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { /* storage unavailable */ }
   const choice = {};
   SLOTS.forEach((sl) => { choice[sl.key] = saved[sl.key] === "off" || sl.effects[saved[sl.key]] ? saved[sl.key] : sl.initial; });
-  choice.look = saved.look === "glass" ? "glass" : (saved.look === "killer" ? "killer" : "brutalist");     
+  OPTIONS.forEach((group) => group.rows.forEach((row) => {
+    if (row.key in choice) return;                                   // the scene row is a slot, handled above
+    choice[row.key] = row.options.some((o) => o[0] === saved[row.key]) ? saved[row.key] : row.def;
+  }));
+
+  let freqStage = null;
+  let credit = null;
+
+  function ensureFreqStage() {
+    if (freqStage) return freqStage;
+    const cv = document.createElement("canvas");
+    cv.className = "fx-canvas fx-freq";
+    cv.setAttribute("aria-hidden", "true");
+    cv.hidden = true;
+    document.body.appendChild(cv);
+    freqStage = new Stage(cv, FreqFX, { maxPixels: 1.6e6 });
+    return freqStage;
+  }
+
+  // the little "Music: ..." strip, with a mute button
+  function updateCredit() {
+    if (!isSynth()) return;
+    if (!credit) {
+      credit = document.createElement("div");
+      credit.className = "synthwave-music-credit";
+      credit.innerHTML = '<span>Music: Hackers by White Bat Audio</span><button type="button"></button>';
+      credit.querySelector("button").addEventListener("click", () => { choice.sound = choice.sound === "on" ? "off" : "on"; apply(); });
+      document.body.appendChild(credit);
+    }
+    const btn = credit.querySelector("button");
+    btn.textContent = choice.sound === "on" ? "Sound: on" : "Sound: off";
+    btn.setAttribute("aria-label", choice.sound === "on" ? "Mute the music" : "Unmute the music");
+  }
 
   function apply() {
-    document.documentElement.classList.toggle("fx-glass", choice.look === "glass");
-    document.documentElement.classList.toggle("fx-killer", choice.look === "killer");
-    
-    // Manage background music for Killer Frequency theme
-    if (choice.look === 'killer') {
-      themeAudio.play().catch(e => console.log('Audio autoplay prevented by browser until interaction:', e));
-    } else {
-      themeAudio.pause();
-      themeAudio.currentTime = 0;
-    }
+    html.classList.toggle("fx-glass", choice.look === "glass");
+    html.classList.toggle("fx-synthwave", choice.look === "synthwave");
+    html.classList.toggle("fx-glass-clear", choice.glass === "clear");
+    html.classList.toggle("fx-glass-mirror", choice.glass === "mirror");
+    html.classList.toggle("fx-tilt", choice.tilt === "on");
+    html.classList.toggle("fx-no-scan", choice.scan === "off");
+
+    const quality = settings.quality, motion = settings.motion;
+    settings.quality = choice.quality;
+    settings.motion = choice.motion;
+    settings.cursor = choice.cursor;
+    freqMode = choice.freq;
 
     SLOTS.forEach((sl) => {
       if (!sl.stage) return;
-      if (choice[sl.key] === "off") { sl.stage.setOn(false); return; }
+      const allowed = !sl.theme || (sl.theme === "synthwave" && isSynth());
+      if (choice[sl.key] === "off" || !allowed) { sl.stage.setOn(false); return; }
       sl.stage.setEffect(sl.effects[choice[sl.key]]);
       sl.stage.setOn(true);
     });
+
+    if (isSynth()) {
+      audio.setMuted(choice.sound === "off");
+      audio.start();
+      if (choice.freq !== "off") ensureFreqStage().setOn(true); else if (freqStage) freqStage.setOn(false);
+    } else {
+      audio.stop();
+      if (freqStage) freqStage.setOn(false);
+    }
+    updateCredit();
+
+    if (quality !== settings.quality) stages.forEach((s) => s.resize());
+    if (motion !== settings.motion) stages.forEach((s) => s.sync());
+
     document.querySelectorAll(".fx-lab button[data-slot]").forEach((b) => {
       b.setAttribute("aria-pressed", String(choice[b.dataset.slot] === b.dataset.value));
     });
-    try { localStorage.setItem(STORE, JSON.stringify(choice)); } catch (e) { }
+    try { localStorage.setItem(STORE, JSON.stringify(choice)); } catch (e) { /* storage unavailable */ }
   }
 
+  /* ---- The Effects Lab: a hidden lightning bolt in the hero opens it ---- */
   function setupLab() {
     const bolt = document.querySelector(".fx-bolt");
     if (!bolt) return;
+    const button = (key, value, label) => `<button type="button" data-slot="${key}" data-value="${value}" aria-pressed="false">${label}</button>`;
+    const row = (label, key, opts) => `<div class="fx-lab-row"><span class="fx-lab-label">${label}</span>${opts.map((o) => button(key, o[0], o[1])).join("")}</div>`;
+    const effectRows = SLOTS.filter((sl) => sl.stage && !sl.theme).map((sl) =>
+      row(sl.label, sl.key, Object.keys(sl.effects).map((k) => [k, NAMES[k]]).concat([["off", "Off"]]))).join("");
+    const groups = OPTIONS.map((g) => `<div class="fx-lab-title">${g.title}</div>${g.rows.map((r) => row(r.label, r.key, r.options)).join("")}`).join("");
+
     const panel = document.createElement("div");
     panel.className = "fx-lab";
     panel.id = "fx-lab";
     panel.hidden = true;
     panel.setAttribute("role", "group");
     panel.setAttribute("aria-label", "Effects lab");
-    const rows = SLOTS.filter((sl) => sl.stage).map((sl) =>
-      `<div class="fx-lab-row"><span class="fx-lab-label">${sl.label}</span>${Object.keys(sl.effects).map((k) =>
-        `<button type="button" data-slot="${sl.key}" data-value="${k}" aria-pressed="false">${NAMES[k]}</button>`).join("")}<button type="button" data-slot="${sl.key}" data-value="off" aria-pressed="false">Off</button></div>`).join("");
-    
-    panel.innerHTML = `<div class="fx-lab-head"><span>Effects lab</span><button type="button" class="fx-lab-close" aria-label="Close effects lab">&times;</button></div>${rows}
-      <div class="fx-lab-row fx-lab-look"><span class="fx-lab-label">Look</span><button type="button" data-slot="look" data-value="brutalist" aria-pressed="false">Brutalist</button><button type="button" data-slot="look" data-value="glass" aria-pressed="false">Glass</button><button type="button" data-slot="look" data-value="killer" aria-pressed="false">Killer Freq</button></div>
+    panel.innerHTML = `<div class="fx-lab-head"><span>Effects lab</span><button type="button" class="fx-lab-close" aria-label="Close effects lab">&times;</button></div>
+      <div class="fx-lab-title">Effects</div>${effectRows}${groups}
       <div class="fx-lab-row fx-lab-foot"><button type="button" data-reset="default">Reset</button><button type="button" data-reset="off">Effects off</button></div>`;
     document.body.appendChild(panel);
     bolt.setAttribute("aria-controls", "fx-lab");
@@ -866,23 +1304,19 @@
       const b = e.target.closest("button");
       if (!b) return;
       if (b.classList.contains("fx-lab-close")) { setOpen(false); return; }
-      if (b.dataset.reset) {
-        SLOTS.forEach((sl) => { choice[sl.key] = b.dataset.reset === "off" ? "off" : sl.initial; });
-        if (b.dataset.reset === "default") choice.look = "brutalist";
+      if (b.dataset.reset === "off") { SLOTS.forEach((sl) => { choice[sl.key] = "off"; }); apply(); return; }
+      if (b.dataset.reset === "default") {
+        SLOTS.forEach((sl) => { choice[sl.key] = sl.initial; });
+        OPTIONS.forEach((g) => g.rows.forEach((r) => { if (!SLOTS.some((sl) => sl.key === r.key)) choice[r.key] = r.def; }));
         apply();
         return;
       }
       choice[b.dataset.slot] = b.dataset.value;
       apply();
     });
-
-    // Inject unobtrusive music credit to DOM
-    const musicCredit = document.createElement("div");
-    musicCredit.className = "killer-music-credit";
-    musicCredit.textContent = "Music: Hackers by White Bat Audio";
-    document.body.appendChild(musicCredit);
   }
 
+  // Start after load + idle so the effects never compete with first paint.
   const start = () => {
     SLOTS.forEach((sl) => {
       const cv = document.getElementById(sl.id);

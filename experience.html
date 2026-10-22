@@ -1,8 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="fx-glass">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Apply the saved look before the first paint so the page never flashes the wrong style.
+        (function () {
+            var h = document.documentElement, s = {};
+            try { s = JSON.parse(localStorage.getItem('portfolio-fx-v4') || '{}') || {}; } catch (e) { }
+            var look = s.look || 'glass';
+            h.classList.toggle('fx-glass', look === 'glass');
+            h.classList.toggle('fx-synthwave', look === 'synthwave');
+            h.classList.toggle('fx-glass-clear', s.glass === 'clear');
+            h.classList.toggle('fx-glass-mirror', s.glass === 'mirror');
+            h.classList.toggle('fx-tilt', s.tilt === 'on');
+            h.classList.toggle('fx-no-scan', s.scan === 'off');
+        })();
+    </script>
     <title>Professional Experience | Alessandro Romero</title>
     
     <!-- Favicon, Tailwind CSS, custom CSS, and interactive scripts -->

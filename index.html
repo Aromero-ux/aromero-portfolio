@@ -1,8 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="fx-glass">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Apply the saved look before the first paint so the page never flashes the wrong style.
+        (function () {
+            var h = document.documentElement, s = {};
+            try { s = JSON.parse(localStorage.getItem('portfolio-fx-v4') || '{}') || {}; } catch (e) { }
+            var look = s.look || 'glass';
+            h.classList.toggle('fx-glass', look === 'glass');
+            h.classList.toggle('fx-synthwave', look === 'synthwave');
+            h.classList.toggle('fx-glass-clear', s.glass === 'clear');
+            h.classList.toggle('fx-glass-mirror', s.glass === 'mirror');
+            h.classList.toggle('fx-tilt', s.tilt === 'on');
+            h.classList.toggle('fx-no-scan', s.scan === 'off');
+        })();
+    </script>
     
     <!-- Primary Search Engine Meta Tags -->
     <title>Alessandro Romero | Software Engineer & IT Student</title>
@@ -109,6 +123,7 @@
     <!-- Hero Section -->
     <header class="relative overflow-hidden bg-[#000000] pt-16 pb-24 border-b-8 border-[#233D4D]">
         <!-- WebGL accent: the AR monogram as a 3D wireframe (see fx.js) -->
+        <canvas id="fx-hero-sun" class="fx-canvas fx-sun" aria-hidden="true" hidden></canvas>
         <canvas id="fx-hero-mono" class="fx-canvas fx-mono" aria-hidden="true" hidden></canvas>
         <!-- Easter egg: a black bolt on the black background. Hover it, click it. (Opens the effects lab, see fx.js) -->
         <button type="button" class="fx-bolt" aria-label="Open the effects lab" aria-expanded="false">
@@ -164,7 +179,7 @@
         <!-- WebGL accent: drifting contour lines, see fx.js -->
         <canvas id="fx-skills" class="fx-canvas fx-fill" aria-hidden="true" hidden></canvas>
         <div class="relative z-10 max-w-5xl mx-auto px-6">
-            <h3 class="text-2xl font-black text-[#EAECF0] uppercase tracking-widest mb-10">Technical Arsenal</h3>
+            <h3 class="text-2xl font-black text-[#EAECF0] uppercase tracking-widest mb-10 text-center">Technical Arsenal</h3>
             <div class="grid md:grid-cols-2 gap-8">
                 <div>
                     <h4 class="text-sm font-bold uppercase tracking-widest text-[#FE7F2D] mb-4">Languages & Databases</h4>
@@ -249,7 +264,7 @@
     <!-- WebGL accent: contour lines. One viewport-sized canvas that stays put while the content scrolls over it. -->
     <canvas id="fx-projects" class="fx-canvas fx-sticky" aria-hidden="true" hidden></canvas>
     <section id="projects" class="relative z-10 py-20 max-w-5xl mx-auto px-6 border-b-8 border-[#000000]">
-        <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12">Featured Projects</h3>
+        <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12 text-center">Featured Projects</h3>
         
         <!-- Roulette: roulette.js turns these cards into a slowly rotating 3D wheel.
              Without JavaScript they simply stay a two-column grid. Add another <article> and it joins the wheel. -->
@@ -426,6 +441,72 @@
                     </span>
                 </div>
             </article>
+
+            <article class="roulette-card glass-card glass-card--feature bg-[#000000] border-4 border-[#FE7F2D] p-8 flex flex-col justify-between hover:border-[#EAECF0] transition-colors duration-300 sharp-edge shadow-[8px_8px_0px_0px_#FE7F2D]">
+                <span class="feature-shimmer" aria-hidden="true"></span>
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-2xl font-black text-[#EAECF0] uppercase">This Portfolio<span class="text-[#FE7F2D]">!</span></h4>
+                            <p class="text-xs font-bold text-[#FE7F2D] uppercase tracking-wider mt-1">aromero.dev &bull; Frontend Engineering & Creative Coding</p>
+                        </div>
+                        <span class="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 bg-[#FE7F2D] text-[#000000] sharp-edge uppercase">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#000000] opacity-60"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-[#000000]"></span>
+                            </span>
+                            You're Here
+                        </span>
+                    </div>
+
+                    <p class="text-[#EAECF0]/85 font-medium text-sm mb-4">
+                        The site you are looking at, designed and built from scratch: hand-written WebGL shaders, a 3D project wheel and switchable looks, with no frameworks and no effects libraries.
+                    </p>
+
+                    <ul class="space-y-2 text-xs font-medium text-[#EAECF0] mb-6">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#FE7F2D] font-black">&rsaquo;</span>
+                            <span><strong class="text-[#FE7F2D]">Raw WebGL, Zero Libraries:</strong> A 3D wireframe of the AR logo, topographic contour lines and a sunburst, all custom GLSL on one tiny engine that pauses off-screen, adapts to slow devices and respects reduced motion.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#FE7F2D] font-black">&rsaquo;</span>
+                            <span><strong class="text-[#FE7F2D]">This 3D Wheel:</strong> Pure CSS 3D with arrows, swipe and keyboard control, and only the front card reachable by screen readers.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#FE7F2D] font-black">&rsaquo;</span>
+                            <span><strong class="text-[#FE7F2D]">Looks on Demand:</strong> Glass, Brutalist, or an audio-reactive Killer Synthwave mode with a WebGL sunset and live frequency lines.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#FE7F2D] font-black">&rsaquo;</span>
+                            <span><strong class="text-[#FE7F2D]">Built to Be Found:</strong> Semantic HTML, structured data, scroll-aware navigation and a serverless Formspree contact form. Psst: there is a hidden &#9889; on this page.</span>
+                        </li>
+                    </ul>
+
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        <span class="px-2.5 py-1 bg-[#FE7F2D] text-[#000000] text-xs font-bold uppercase tracking-wider sharp-edge">WebGL / GLSL</span>
+                        <span class="px-2.5 py-1 bg-[#FE7F2D] text-[#000000] text-xs font-bold uppercase tracking-wider sharp-edge">Vanilla JS</span>
+                        <span class="px-2.5 py-1 bg-[#FE7F2D] text-[#000000] text-xs font-bold uppercase tracking-wider sharp-edge">Tailwind CSS</span>
+                        <span class="px-2.5 py-1 bg-[#FE7F2D] text-[#000000] text-xs font-bold uppercase tracking-wider sharp-edge">HTML5</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t-2 border-[#FE7F2D]">
+                    <a href="https://github.com/Aromero-ux" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#FE7F2D] hover:text-[#EAECF0] transition-colors group">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FE7F2D] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FE7F2D]"></span>
+                        </span>
+                        <span class="underline underline-offset-4 decoration-[#FE7F2D] decoration-2">See the Code on GitHub &rarr;</span>
+                    </a>
+
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#EAECF0]/80 px-2.5 py-1 border border-[#EAECF0]/40 sharp-edge">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                        </svg>
+                        Public Repo
+                    </span>
+                </div>
+            </article>
                 </div>
             </div>
             <div class="roulette-controls">
@@ -451,7 +532,7 @@
     <!-- WebGL accent: contour lines -->
     <canvas id="fx-experience" class="fx-canvas fx-sticky" aria-hidden="true" hidden></canvas>
     <section id="experience" class="relative z-10 py-20 max-w-5xl mx-auto px-6">
-        <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12">Experience</h3>
+        <h3 class="text-3xl font-black text-[#000000] uppercase tracking-widest mb-12 text-center">Experience</h3>
         
         <div class="space-y-8">
             <!-- 1. Set Ups Coordinator -->
