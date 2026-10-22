@@ -259,12 +259,15 @@ footer[id] {
     z-index: 0;
     width: 100%;
     height: 100vh;
+    height: 100lvh;
     margin-bottom: -100vh;
+    margin-bottom: -100lvh;
 }
 
 .fx-sticky--footer {
     margin-top: -6rem;
     margin-bottom: calc(6rem - 100vh);
+    margin-bottom: calc(6rem - 100lvh);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1387,4 +1390,57 @@ html.sphere-locked {
     background: #ff007f;
     border-color: #ff007f;
     color: #ffffff;
+}
+
+.fx-no-links .sphere-lines {
+    display: none;
+}
+
+/* Phones: the same liquid glass, with less GPU spent on it */
+@media (max-width: 767px) {
+    html.fx-glass,
+    html.fx-glass.fx-glass-clear,
+    html.fx-glass.fx-glass-mirror {
+        --g-blur: 10px;
+        --g-sat: 1.4;
+    }
+
+    .fx-glass .site-nav {
+        -webkit-backdrop-filter: blur(calc(16px * var(--p))) saturate(calc(1 + 0.6 * var(--p)));
+        backdrop-filter: blur(calc(16px * var(--p))) saturate(calc(1 + 0.6 * var(--p)));
+    }
+
+    .fx-reveal.fx-glass .glass-card:not(.roulette-card):not(.is-in) {
+        filter: none;
+        transform: translateY(28px);
+    }
+
+    .fx-synthwave .glass-card {
+        -webkit-backdrop-filter: blur(10px) saturate(1.4) !important;
+        backdrop-filter: blur(10px) saturate(1.4) !important;
+    }
+
+    .fx-synthwave:not(.fx-no-scan)::after {
+        display: none;
+    }
+
+    .sphere-field {
+        height: 28rem;
+    }
+
+    .sphere-view::before {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: rgb(8 10 14 / 0.84);
+    }
+
+    .fx-glass .sphere-view-btn {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: rgb(255 255 255 / 0.24);
+    }
+
+    .sphere-view-body .sphere-card {
+        padding: 1.25rem;
+    }
 }

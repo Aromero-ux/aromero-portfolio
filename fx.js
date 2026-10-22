@@ -405,7 +405,7 @@
       this.raf = requestAnimationFrame(this.tick);
       if (!this.fx) return;
       const busy = this.fx.busy(now);
-      const minDt = settings.motion === "calm" ? 33 : busy ? 14 : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
+      const minDt = settings.motion === "calm" ? 33 : busy ? (lite() ? 33 : 14) : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
       if (now - this.lastRender < minDt) return;
       const dt = Math.min((now - this.lastRender) / 1000, 0.1);
       this.lastRender = now;
@@ -1098,7 +1098,7 @@
       gl.disable(gl.DEPTH_TEST);
     }
     dispose() { this.gl.deleteProgram(this.prog); this.gl.deleteBuffer(this.buf); this.gl.deleteTexture(this.tex); }
-    pixelScale(q) { return Math.min(devicePixelRatio || 1, 1.25) * q * QUALITY_SCALE[settings.quality]; }
+    pixelScale(q) { return (lite() ? 0.6 : Math.min(devicePixelRatio || 1, 1.25)) * q * QUALITY_SCALE[settings.quality]; }
     resize(w, h) { this.w = w; this.h = h; }
     step(dt, now) {
       audio.update(now);
@@ -1225,21 +1225,26 @@
     const cfg = Object.assign({ frag: DITHER_FS, seed: [0, 0], freq: 1, pulse: 0, scroll: 0 }, tone, o);
     return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
   };
+  const halftone = (tone, o) => {
+    const cfg = Object.assign({ frag: HALFTONE_FS, seed: [0, 0], freq: 1, pulse: 0, scroll: 0 }, tone, o);
+    return class extends FieldFX { constructor(gl, stage) { super(gl, stage, cfg); } };
+  };
   const fieldEffects = (tone, o) => ({ contours: contours(tone, o), rays: rays(tone, o) });
+  const withDots = (tone, o) => Object.assign(fieldEffects(tone, o), { dither: dither(tone, o), halftone: halftone(tone, o) });
 
   const FIELD = { maxPixels: 2.0e6 };
   const PROJECT_FIELD = { seed: [4, 2], pulse: 1, scroll: 0.3 };      // projects and experience share it, so they read as one backdrop
   const SLOTS = [
     { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
-    { key: "skills",     label: "Skills",     id: "fx-skills",     initial: "contours", opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [0, 0] }) },
-    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: Object.assign(fieldEffects(ON_CREAM, PROJECT_FIELD), { dither: dither(ON_CREAM, PROJECT_FIELD) }) },
-    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: Object.assign(fieldEffects(ON_CREAM, PROJECT_FIELD), { dither: dither(ON_CREAM, PROJECT_FIELD) }) },
-    { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: fieldEffects(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
+    { key: "skills",     label: "Skills",     id: "fx-skills",     initial: "contours", opts: FIELD, effects: withDots(ON_NAVY, { seed: [0, 0] }) },
+    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: withDots(ON_CREAM, PROJECT_FIELD) },
+    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: withDots(ON_CREAM, PROJECT_FIELD) },
+    { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: withDots(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
     { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) },
     // only exists in the Killer Synthwave look (the lab shows it under "Synthwave")
     { key: "sun",        label: "Scene",      id: "fx-hero-sun",   initial: "sunset",   theme: "synthwave", opts: { maxPixels: 1.6e6 }, effects: { sunset } }
   ];
-  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays", dither: "Dither", sunset: "Sunset" };
+  const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays", dither: "Dither", halftone: "Halftone", sunset: "Sunset" };
 
   // Everything else the lab can change. The first option is not necessarily the default: `def` is.
   const OPTIONS = [
@@ -1247,7 +1252,12 @@
       { key: "look", label: "Look", def: "glass", options: [["glass", "Glass"], ["brutalist", "Brutalist"], ["synthwave", "Killer Synthwave"]] },
       { key: "glass", label: "Glass", def: "frosted", options: [["clear", "Clear"], ["frosted", "Frosted"], ["mirror", "Mirror"]] },
       { key: "tilt", label: "Tilt", def: "off", options: [["off", "Off"], ["on", "On"]] },
-      { key: "layout", label: "Projects", def: "wheel", options: [["wheel", "Roulette"], ["sphere", "Sphere"]] }
+      { key: "layout", label: "Projects", def: "sphere", options: [["sphere", "Sphere"], ["wheel", "Roulette"]] }
+    ] },
+    { title: "Sphere", rows: [
+      { key: "spin", label: "Spin", def: "on", options: [["on", "On"], ["off", "Off"]] },
+      { key: "float", label: "Float", def: "on", options: [["on", "On"], ["off", "Off"]] },
+      { key: "links", label: "Links", def: "on", options: [["on", "On"], ["off", "Off"]] }
     ] },
     { title: "Performance", rows: [
       { key: "motion", label: "Motion", def: "full", options: [["full", "Full"], ["calm", "Calm"], ["still", "Still"]] },
@@ -1309,6 +1319,9 @@
     html.classList.toggle("fx-tilt", choice.tilt === "on");
     html.classList.toggle("fx-no-scan", choice.scan === "off");
     html.classList.toggle("fx-sphere", choice.layout === "sphere");
+    html.classList.toggle("fx-no-spin", choice.spin === "off");
+    html.classList.toggle("fx-no-float", choice.float === "off");
+    html.classList.toggle("fx-no-links", choice.links === "off");
 
     const quality = settings.quality, motion = settings.motion;
     settings.quality = choice.quality;

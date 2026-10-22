@@ -134,6 +134,9 @@
   const html = document.documentElement;
   const TAU = Math.PI * 2;
   const wrap = (a) => a - TAU * Math.round(a / TAU);
+  const small = matchMedia("(max-width: 767px)");
+  const floating = () => !reduce.matches && !html.classList.contains("fx-no-float");
+  const spinning = () => !reduce.matches && !html.classList.contains("fx-no-spin");
   const tileScale = Math.max(0.72, Math.min(1, 1.12 - n * 0.03));      // more projects, smaller tiles
   let sphere = null, field = null, view = null, lines = null;
   let tiles = [];
@@ -246,14 +249,14 @@
 
   function layoutSphere() {
     fieldW = field.clientWidth; fieldH = field.clientHeight;
-    rx = Math.min(fieldW * 0.38, 40 * 16);                 // wider than tall, so the tiles spread across the page
-    ry = fieldH * 0.3;
+    rx = fieldW < 640 ? fieldW * 0.3 : Math.min(fieldW * 0.38, 40 * 16);   // wider than tall, so the tiles spread across the page
+    ry = fieldH * 0.27;
     drawSphere();
   }
 
   function drawSphere(now) {
     const time = (now === undefined ? performance.now() : now) / 1000;
-    const bob = !reduce.matches;
+    const bob = floating();
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const ox = fieldW / 2, oy = fieldH / 2;
     tiles.forEach((t) => {
@@ -395,6 +398,7 @@
 
   function sphereTick(now) {
     sphereRaf = requestAnimationFrame(sphereTick);
+    if (small.matches && now - last < 32) return;          // ~30 fps on phones
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     let moving = false;
@@ -413,7 +417,7 @@
         vYaw *= f; vPitch *= f;
         moving = true;
       }
-      if (!reduce.matches && !hovering && !focused && !userPaused && !viewOn) {
+      if (spinning() && !hovering && !focused && !userPaused && !viewOn) {
         yaw += 0.1 * dt;
         pitch += (0.22 * Math.sin(now / 5000) - pitch) * Math.min(1, dt * 0.6);   // a slow nod, so it never feels like a flat carousel
         moving = true;
@@ -423,7 +427,7 @@
       const d = t.want - t.hov;
       if (Math.abs(d) > 0.003) { t.hov += d * Math.min(1, dt * 10); moving = true; }
     });
-    if (!reduce.matches) moving = true;                    // the tiles keep floating
+    if (floating()) moving = true;                        // the tiles keep floating
     if (moving) drawSphere(now);
   }
 

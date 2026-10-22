@@ -15,7 +15,8 @@
             h.classList.toggle('fx-glass-mirror', s.glass === 'mirror');
             h.classList.toggle('fx-tilt', s.tilt === 'on');
             h.classList.toggle('fx-no-scan', s.scan === 'off');
-            h.classList.toggle('fx-sphere', s.layout === 'sphere');
+            h.classList.toggle('fx-sphere', s.layout !== 'wheel');
+            h.classList.toggle('fx-no-links', s.links === 'off');
         })();
     </script>
     
