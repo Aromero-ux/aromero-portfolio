@@ -243,10 +243,10 @@
       if (now === lastNow) return;
       lastNow = now;
       const playing = active();
+      if (playing && analyser) analyser.getByteFrequencyData(bins);
       for (let b = 0; b < BANDS; b++) {
         let v;
         if (playing && analyser) {
-          analyser.getByteFrequencyData(bins);
           let sum = 0;
           const r = ranges[b];
           for (let i = r[0]; i < r[1]; i++) sum += bins[i];
@@ -379,7 +379,7 @@
       this.raf = requestAnimationFrame(this.tick);
       if (!this.fx) return;
       const busy = this.fx.busy(now);
-      const minDt = settings.motion === "calm" ? 33 : busy ? 14 : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
+      const minDt = settings.motion === "calm" ? 33 : busy ? (this.opts.busyDt || 14) : lite() ? 42 : 31;      // ~60 / ~30 / ~24 fps
       if (now - this.lastRender < minDt) return;
       const dt = Math.min((now - this.lastRender) / 1000, 0.1);
       this.lastRender = now;
@@ -1154,7 +1154,7 @@
   };
   const fieldEffects = (tone, o) => ({ contours: contours(tone, o), rays: rays(tone, o) });
 
-  const FIELD = { maxPixels: 2.0e6 };
+  const FIELD = { maxPixels: 1.2e6, busyDt: 24 };            // full-screen fbm shaders: ~40 fps and fewer pixels
   const PROJECT_FIELD = { seed: [4, 2], pulse: 1, scroll: 0.3 };      // projects and experience share it, so they read as one backdrop
   const SLOTS = [
     { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
@@ -1164,7 +1164,7 @@
     { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: fieldEffects(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
     { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) },
     // only exists in the Killer Synthwave look (the lab shows it under "Synthwave")
-    { key: "sun",        label: "Scene",      id: "fx-hero-sun",   initial: "sunset",   theme: "synthwave", opts: { maxPixels: 1.6e6 }, effects: { sunset } }
+    { key: "sun",        label: "Scene",      id: "fx-hero-sun",   initial: "sunset",   theme: "synthwave", opts: { maxPixels: 1.2e6, busyDt: 24 }, effects: { sunset } }
   ];
   const NAMES = { monogram: "Monogram", contours: "Contours", rays: "Rays", sunset: "Sunset" };
 
@@ -1209,7 +1209,7 @@
     cv.setAttribute("aria-hidden", "true");
     cv.hidden = true;
     document.body.appendChild(cv);
-    freqStage = new Stage(cv, FreqFX, { maxPixels: 1.6e6 });
+    freqStage = new Stage(cv, FreqFX, { maxPixels: 1.2e6, busyDt: 24 });
     return freqStage;
   }
 
