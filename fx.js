@@ -355,13 +355,16 @@
       }
     }
 
+    // reduced motion, the "still" setting and phones all draw one frame instead of animating
+    isStill() { return reduce.matches || settings.motion === "still" || lite(); }
+
     sync() {
       const go = this.on && this.visible && !document.hidden;
       if (!go) { this.stop(); return; }
       if (!this.init()) { this.on = false; return; }
       if (!this.sized) this.resize();
       if (!this.sized) return;                  
-      if (reduce.matches || settings.motion === "still") { this.stop(); this.renderStill(); return; }
+      if (this.isStill()) { this.stop(); this.renderStill(); return; }
       if (!this.raf) { this.lastRender = performance.now(); this.raf = requestAnimationFrame(this.tick); }
     }
     setEffect(Effect) {
@@ -390,7 +393,7 @@
       this.gl.viewport(0, 0, w, h);
       this.fx.resize(w, h, cssW, cssH, s);
       this.sized = true;
-      if (!this.raf && this.on && this.visible && (reduce.matches || settings.motion === "still")) this.renderStill();
+      if (!this.raf && this.on && this.visible && this.isStill()) this.renderStill();
     }
 
     renderStill() {
@@ -757,7 +760,7 @@
     pixelScale(q) {
       const qs = QUALITY_SCALE[settings.quality];
       if (this.cfg.scale) return this.cfg.scale(lite(), q) * qs;
-      return (lite() ? 0.6 : Math.min(devicePixelRatio || 1, settings.quality === "high" ? 2 : 1.5)) * q * qs;
+      return (lite() ? Math.min(devicePixelRatio || 1, 3) : Math.min(devicePixelRatio || 1, settings.quality === "high" ? 2 : 1.5)) * q * qs;
     }
     resize(w, h, cssW, cssH, s) { this.w = w; this.h = h; this.cssW = cssW; this.cssH = cssH; this.s = s; }
 
@@ -1031,7 +1034,7 @@
   const sunset = (() => {
     const cfg = {
       frag: SUNSET_FS, ink: CREAM, minor: 0, major: 0, seed: [0, 0], freq: 1, pulse: 0, audio: true, trail: false, click: 1.0,
-      scale: (l, q) => (l ? 0.5 : Math.min(devicePixelRatio || 1, 1.25)) * q,
+      scale: (l, q) => Math.min(devicePixelRatio || 1, l ? 3 : 1.25) * q,
       uniforms: ["uAudio"],
       extra: (gl, U) => gl.uniform4f(U.uAudio, audio.levels.bass, audio.levels.mid, audio.levels.treble, audio.levels.calm)
     };
@@ -1235,10 +1238,10 @@
   const FIELD = { maxPixels: 2.0e6 };
   const PROJECT_FIELD = { seed: [4, 2], pulse: 1, scroll: 0.3 };      // projects and experience share it, so they read as one backdrop
   const SLOTS = [
-    { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", opts: { antialias: true }, effects: { monogram: MonogramFX } },
+    { key: "hero",       label: "Hero",       id: "fx-hero-mono",  initial: "monogram", phoneOff: true, opts: { antialias: true }, effects: { monogram: MonogramFX } },
     { key: "skills",     label: "Skills",     id: "fx-skills",     initial: "contours", opts: FIELD, effects: withDots(ON_NAVY, { seed: [0, 0] }) },
-    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "contours", opts: FIELD, effects: withDots(ON_CREAM, PROJECT_FIELD) },
-    { key: "experience", label: "Experience", id: "fx-experience", initial: "contours", opts: FIELD, effects: withDots(ON_CREAM, PROJECT_FIELD) },
+    { key: "projects",   label: "Projects",   id: "fx-projects",   initial: "off", opts: FIELD, effects: withDots(ON_CREAM, PROJECT_FIELD) },
+    { key: "experience", label: "Experience", id: "fx-experience", initial: "off", opts: FIELD, effects: withDots(ON_CREAM, PROJECT_FIELD) },
     { key: "education",  label: "Education",  id: "fx-education",  initial: "contours", opts: FIELD, effects: withDots(ON_BLACK, { seed: [13, 3], pulse: 1, scroll: 0.3 }) },
     { key: "contact",    label: "Contact",    id: "fx-contact",    initial: "rays",     opts: FIELD, effects: fieldEffects(ON_NAVY, { seed: [7, 11], freq: 0.9, pulse: 1, scroll: 0.35 }) },
     // only exists in the Killer Synthwave look (the lab shows it under "Synthwave")
@@ -1257,7 +1260,7 @@
     { title: "Sphere", rows: [
       { key: "spin", label: "Spin", def: "on", options: [["on", "On"], ["off", "Off"]] },
       { key: "float", label: "Float", def: "on", options: [["on", "On"], ["off", "Off"]] },
-      { key: "links", label: "Links", def: "on", options: [["on", "On"], ["off", "Off"]] }
+      { key: "links", label: "Links", def: "off", options: [["on", "On"], ["off", "Off"]] }
     ] },
     { title: "Performance", rows: [
       { key: "motion", label: "Motion", def: "full", options: [["full", "Full"], ["calm", "Calm"], ["still", "Still"]] },
@@ -1272,7 +1275,7 @@
   ];
 
   // choices survive a reload (and carry over to the other pages); anything unknown falls back to the default
-  const STORE = "portfolio-fx-v4";
+  const STORE = "portfolio-fx-v5";
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { /* storage unavailable */ }
   const choice = {};
@@ -1331,7 +1334,7 @@
     SLOTS.forEach((sl) => {
       if (!sl.stage) return;
       const allowed = !sl.theme || (sl.theme === "synthwave" && isSynth());
-      if (choice[sl.key] === "off" || !allowed) { sl.stage.setOn(false); return; }
+      if (choice[sl.key] === "off" || !allowed || (sl.phoneOff && lite())) { sl.stage.setOn(false); return; }
       sl.stage.setEffect(sl.effects[choice[sl.key]]);
       sl.stage.setOn(true);
     });
@@ -1339,7 +1342,7 @@
     if (isSynth()) {
       audio.setMuted(choice.sound === "off");
       audio.start();
-      ensureFreqStage().setOn(true);
+      if (lite()) { if (freqStage) freqStage.setOn(false); } else ensureFreqStage().setOn(true);
     } else {
       audio.stop();
       if (freqStage) freqStage.setOn(false);
@@ -1410,7 +1413,7 @@
     });
     setupLab();
     apply();
-    liteMQ.addEventListener && liteMQ.addEventListener("change", () => stages.forEach((s) => s.resize()));
+    liteMQ.addEventListener && liteMQ.addEventListener("change", () => { apply(); stages.forEach((s) => { s.resize(); s.sync(); }); });
     reduce.addEventListener && reduce.addEventListener("change", () => stages.forEach((s) => s.sync()));
     document.addEventListener("visibilitychange", () => stages.forEach((s) => s.sync()));
   };

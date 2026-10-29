@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
     <script>
         // Apply the saved look before the first paint so the page never flashes the wrong style.
         (function () {
             var h = document.documentElement, s = {};
-            try { s = JSON.parse(localStorage.getItem('portfolio-fx-v4') || '{}') || {}; } catch (e) { }
+            try { s = JSON.parse(localStorage.getItem('portfolio-fx-v5') || '{}') || {}; } catch (e) { }
             var look = s.look || 'glass';
             h.classList.toggle('fx-glass', look === 'glass');
             h.classList.toggle('fx-synthwave', look === 'synthwave');
@@ -40,6 +41,37 @@
     </header>
 
     <main>
+
+        <!-- Project: OnValidation LPR (Commented Out) -->
+        <!--
+        <section class="py-20 bg-[#000000] border-b-8 border-[#FCB841] lazy-item">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 border-b-2 border-[#EAECF0]/20 pb-4">
+                    <div>
+                        <h2 class="text-3xl sm:text-4xl font-black text-[#EAECF0] uppercase tracking-tight">OnValidation LPR</h2>
+                        <p class="inline-block px-2.5 py-1 bg-[#FCB841] text-[#000000] text-xs font-bold uppercase tracking-wider mt-2 sharp-edge">Intelligent Parking System</p>
+                    </div>
+                    
+                    <a href="https://app.onvalidation.net/" target="_blank" class="brutalist-btn back-orange sharp-edge mt-4 md:mt-0">
+                        <div class="brutalist-btn-content bg-[#FCB841] text-[#000000] border-2 border-[#FCB841] px-6 py-3 text-xs font-bold uppercase tracking-widest hover:bg-[#ffffff]">
+                            Launch App
+                        </div>
+                    </a>
+                </div>
+                <div class="flex flex-col md:flex-row gap-12">
+                    <p class="text-[#EAECF0]/80 text-lg font-medium leading-relaxed md:w-2/3">
+                        Engineered backend sub-systems, administrative web dashboards, and hardware API integrations for an automated License Plate Recognition (LPR) platform deployed across commercial facilities in Central and South America.
+                    </p>
+                    <div class="md:w-1/3 flex flex-wrap gap-2 h-fit">
+                        <span class="px-3 py-1.5 bg-[#EAECF0]/10 text-[#EAECF0] border-2 border-[#EAECF0]/20 text-xs font-bold uppercase tracking-wider sharp-edge">C# / .NET</span>
+                        <span class="px-3 py-1.5 bg-[#EAECF0]/10 text-[#EAECF0] border-2 border-[#EAECF0]/20 text-xs font-bold uppercase tracking-wider sharp-edge">PostgreSQL</span>
+                        <span class="px-3 py-1.5 bg-[#EAECF0]/10 text-[#EAECF0] border-2 border-[#EAECF0]/20 text-xs font-bold uppercase tracking-wider sharp-edge">Hardware APIs</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        -->
+
         <!-- Project 1: This Portfolio -->
         <section class="py-20 bg-[#000000] border-b-8 border-[#FE7F2D] lazy-item">
             <div class="max-w-5xl mx-auto px-6">

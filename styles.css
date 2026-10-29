@@ -111,13 +111,15 @@ footer[id] {
     transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
-.brutalist-btn:hover .brutalist-btn-content {
-    transform: translate(-4px, -4px);
-}
+@media (hover: hover) {
+    .brutalist-btn:hover .brutalist-btn-content {
+        transform: translate(-4px, -4px);
+    }
 
-.brutalist-btn:hover::after {
-    opacity: 1;
-    transform: translate(2px, 2px);
+    .brutalist-btn:hover::after {
+        opacity: 1;
+        transform: translate(2px, 2px);
+    }
 }
 
 .brutalist-btn:active .brutalist-btn-content {
@@ -926,6 +928,23 @@ html.sphere-locked {
     white-space: nowrap;
 }
 
+.site-nav.menu-open {
+    padding-bottom: 0;
+}
+
+.fx-glass .site-nav #mobile-menu,
+.fx-synthwave .site-nav #mobile-menu {
+    border-radius: 0 0 calc(28px * var(--p)) calc(28px * var(--p));
+}
+
+.fx-glass .site-nav #mobile-menu {
+    box-shadow: inset 0 -1px 0 rgb(254 127 45 / calc(0.75 * var(--p)));
+}
+
+.fx-synthwave .site-nav #mobile-menu {
+    box-shadow: inset 0 -1px 0 rgb(255 0 127 / calc(0.75 * var(--p)));
+}
+
 .nav-link {
     position: relative;
     transition: color 0.25s ease;
@@ -1278,11 +1297,13 @@ html.sphere-locked {
     text-shadow: none !important;
 }
 
-.fx-synthwave .brutalist-btn:hover .brutalist-btn-content,
-.fx-synthwave .send-message-btn:hover {
-    background-color: #ff007f !important;
-    color: #14141e !important;
-    border-color: #00e5ff !important;
+@media (hover: hover) {
+    .fx-synthwave .brutalist-btn:hover .brutalist-btn-content,
+    .fx-synthwave .send-message-btn:hover {
+        background-color: #ff007f !important;
+        color: #14141e !important;
+        border-color: #00e5ff !important;
+    }
 }
 
 .fx-synthwave .brutalist-btn::after,
